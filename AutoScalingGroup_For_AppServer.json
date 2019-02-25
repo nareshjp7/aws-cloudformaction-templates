@@ -1,0 +1,614 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Template For AutoScalingGroup ApplicationServer",
+  "Metadata": {
+    "AWS::CloudFormation::Interface": {
+      "ParameterGroups": [
+        {
+          "Label": {
+            "default": "Launch Configuration"
+          },
+          "Parameters": [
+            "KeyName",
+            "InstanceType",
+            "VpcId"
+          ]
+        },
+        {
+          "Label": {
+            "default": "AutoScalingGroup"
+          },
+          "Parameters": [
+            "MaxSize",
+            "DesiredCapacity",
+            "SubnetId",
+            "SubnetId2"
+          ]
+        },
+        {
+          "Label": {
+            "default": "Git Configuration"
+          },
+          "Parameters": [
+            "BranchName",
+            "Username",
+            "Password"
+          ]
+        }
+      ],
+      "ParameterLabels": {
+        "SubnetId": {
+          "default": "SubnetId"
+        },
+        "SubnetId2": {
+          "default": "SubnetId2"
+        },
+        "MaxSize": {
+          "default": "MaxSize"
+        },
+        "DesiredCapacity": {
+          "default": "DesiredCapacity"
+        },
+        "BranchName": {
+          "default": "BranchName"
+        },
+        "Username": {
+          "default": "Username"
+        },
+        "Password": {
+          "default": "Password"
+        },
+        "InstanceType": {
+          "default": "InstanceType"
+        },
+        "KeyName": {
+          "default": "KeyName"
+        },
+        "VpcId": {
+          "default": "VpcId"
+        }
+      }
+    }
+  },
+  "Parameters": {
+    "SubnetId2": {
+      "Type": "AWS::EC2::Subnet::Id",
+      "Description": "Please select the Different Zone SubnetId for Accessing the Other AvailabilityZone in your Virtual Private Cloud (VPC),using from above VpcIds"
+    },
+    "SubnetId": {
+      "Type": "AWS::EC2::Subnet::Id",
+      "Description": "Please select the SubnetId in your Virtual Private Cloud (VPC),using from above VpcIds"
+    },
+    "MaxSize": {
+      "Description": "Please Enter the Maximum No of Instances for AutoScaling group",
+      "Type": "Number",
+      "MinValue": 2
+    },
+    "DesiredCapacity": {
+      "Description": "Please Enter the Desired capacity but it Should be in between Max and Min Size(2)",
+      "Type": "String"
+    },
+    "KeyName": {
+      "Description": "Please select the name of an existing EC2 KeyPair to enable SSH access to the instances",
+      "Type": "AWS::EC2::KeyPair::KeyName"
+    },
+    "InstanceType": {
+      "Description": "Please select the type of EC2 instance to launch",
+      "Type": "String",
+      "AllowedValues": [
+        "t2.nano",
+        "t2.micro",
+        "t2.small",
+        "t2.medium",
+        "t2.large",
+        "m3.medium",
+        "m3.large",
+        "m4.large"
+      ],
+      "Default": "t2.micro"
+    },
+    "BranchName": {
+      "Description": "Please Enter the Branchname for GitHub",
+      "Type": "String"
+    },
+    "Password": {
+      "Description": "Please Enter the Password for GitHub, If your password contains @ please replace the value with %40 ",
+      "Type": "String",
+      "NoEcho": "true"
+    },
+    "VpcId": {
+      "Description": "Please select default VpcId to create instance",
+      "Type": "AWS::EC2::VPC::Id"
+    },
+    "Username": {
+      "Description": "Please Enter the Username for GitHub",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "SecurityGroups": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "GroupDescription": "Enable SMTP access from the Internet and SSH/HTTP access from maintenance CIDR.",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "25",
+            "ToPort": "25",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "22",
+            "ToPort": "22",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "8080",
+            "ToPort": "8080",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "ScalingPolicyforAppserver": {
+      "Type": "AWS::AutoScaling::ScalingPolicy",
+      "Properties": {
+        "AdjustmentType": "ChangeInCapacity",
+        "PolicyType": "SimpleScaling",
+        "Cooldown": "60",
+        "AutoScalingGroupName": {
+          "Ref": "AutoScalingGroupForAppServer"
+        },
+        "ScalingAdjustment": 1
+      }
+    },
+    "AutoScalingGroupForAppServer": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties": {
+        "DesiredCapacity": {
+          "Ref": "DesiredCapacity"
+        },
+        "HealthCheckGracePeriod": "30",
+        "HealthCheckType": "EC2",
+        "LaunchConfigurationName": {
+          "Ref": "LaunchConfigForAppServer"
+        },
+        "LoadBalancerNames": [
+          {
+            "Ref": "ElasticLoadBalancerForAppServer"
+          }
+        ],
+        "MaxSize": {
+          "Ref": "MaxSize"
+        },
+        "MinSize": "2",
+        "VPCZoneIdentifier": [
+          {
+            "Ref": "SubnetId"
+          },
+          {
+            "Ref": "SubnetId2"
+          }
+        ]
+      }
+    },
+    "LaunchConfigForAppServer": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "AssociatePublicIpAddress": "true",
+        "InstanceMonitoring": "true",
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "ImageId": {
+          "Fn::FindInMap": [
+            "AWSRegion2AMI",
+            {
+              "Ref": "AWS::Region"
+            },
+            "AMI"
+          ]
+        },
+        "SecurityGroups": [
+          {
+            "Ref": "SecurityGroups"
+          }
+        ],
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -xe\n",
+                "yum install -y aws-cfn-bootstrap\n",
+                "# Install the files and packages from the metadata\n",
+                "/opt/aws/bin/cfn-init -v ",
+                "         --stack ",
+                {
+                  "Ref": "AWS::StackName"
+                },
+                "         --resource LaunchConfigForAppServer ",
+                "         --configsets Install ",
+                "    --region ",
+                {
+                  "Ref": "AWS::Region"
+                },
+                " || error_exit 'Failed to run cfn-init'\n",
+                "sudo su - \n",
+                "cd /home/ec2-user \n",
+                "chmod 777 deployScripts\n",
+                "/home/ec2-user/deployScripts \n"
+              ]
+            ]
+          }
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Init": {
+          "configSets": {
+            "Install": [
+              "Install"
+            ]
+          },
+          "Install": {
+            "sources": {
+              "/usr/local": "http://awsu-amm.s3.amazonaws.com/apache-maven-3.0.4-bin.tar.gz"
+            },
+            "packages": {
+              "yum": {
+                "git": [],
+                "java-1.8.0-openjdk*": [],
+                "tomcat8": []
+              }
+            },
+            "files": {
+              "/home/ec2-user/deployScripts": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "#!/bin/bash -xe\n",
+                      "date > /home/ec2-user/logfile \n",
+                      "# Add Tomcat user to sudoers and disable tty \n",
+                      "echo \"tomcat ALL=(ALL) NOPASSWD:ALL\" >> /etc/sudoers\n",
+                      "echo \"Defaults:%tomcat !requiretty\" >> /etc/sudoers\n",
+                      "echo \"Defaults:tomcat !requiretty\" >> /etc/sudoers\n",
+                      "MemInfo=",
+                      "$(cat /proc/meminfo | grep 'MemTotal:')",
+                      "\n",
+                      "O1=",
+                      "$(expr length ",
+                      "\"$(echo $MemInfo)\")",
+                      "\n",
+                      "O2=",
+                      "$(expr $O1 - 13)",
+                      "\n",
+                      "O3=",
+                      "$(expr substr ",
+                      "\"$(echo $MemInfo)\" 11 \"$(echo $O2)\")",
+                      "\n",
+                      "O4=",
+                      "$(expr $O3 / 2)",
+                      "\n",
+                      "O5=",
+                      "$(expr $O3 / 4)",
+                      "\n",
+                      "O6=",
+                      "$(expr $O4 / 1000)",
+                      "\n",
+                      "O7=",
+                      "$(expr $O5 / 1000)",
+                      "\n",
+                      "O6+=m\n",
+                      "O7+=m\n",
+                      "# Set JVM settings\n",
+                      "echo \"JAVA_OPTS='${JAVA_OPTS} -Xms$O6 -Xmx$O6 -XX:PermSize=$O7 -XX:MaxPermSize=$O6'\" >> /etc/tomcat8/tomcat8.conf\n",
+                      "# Tomcat Setup\n",
+                      "chown -R tomcat:tomcat /usr/share/tomcat8/ \n",
+                      "chkconfig tomcat8 on\n",
+                      "chkconfig --level 345 tomcat8 on\n",
+                      "git clone -b ",
+                      {
+                        "Ref": "BranchName"
+                      },
+                      " https://",
+                      {
+                        "Ref": "Username"
+                      },
+                      ":",
+                      {
+                        "Ref": "Password"
+                      },
+                      "@github.com/rgowerneni/email-service >> /home/ec2-user/logfile \n",
+                      "cd /home/ec2-user/email-service \n",
+                      "/usr/sbin/alternatives --set java /usr/lib/jvm/jre-1.8.0-openjdk.x86_64/bin/java \n",
+                      "/usr/local/apache-maven-3.0.4/bin/mvn clean install -DskipTests >> /home/ec2-user/logfile \n",
+                      "cp  /home/ec2-user/email-service/moxiecampaigner-web/target/*.war  /usr/share/tomcat8/webapps \n",
+                      "# Start servers\n",
+                      "service tomcat8 start >> /home/ec2-user/logfile \n",
+                      "rm -rf /home/ec2-user/email-service\n",
+                      "date >> /home/ec2-user/logfile \n"
+                    ]
+                  ]
+                },
+                "mode": "000777",
+                "owner": "root",
+                "group": "root"
+              },
+              "/usr/share/tomcat8/lib/aws.properties": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "aws.s3.bucket.endpoint=s3-external-1.amazonaws.com \n",
+                      "mail=moxieitemail \n",
+                      "email.master.queue=Moxieit-email-master-queue1 \n",
+                      "mail.id=moxieitdeveloper8@gmail.com \n",
+                      "mail.password=moxieit123 \n",
+                      "host.name=52.91.188.218 \n",
+                      "mail.smtp.port=2525 \n",
+                      "SECRET_KEY=MoxieitIncCampaignerApplication \n"
+                    ]
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ElasticLoadBalancerForAppServer": {
+      "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+      "Properties": {
+        "Subnets": [
+          {
+            "Ref": "SubnetId"
+          },
+          {
+            "Ref": "SubnetId2"
+          }
+        ],
+        "Listeners": [
+          {
+            "LoadBalancerPort": "80",
+            "InstancePort": "8080",
+            "Protocol": "HTTP"
+          }
+        ],
+        "SecurityGroups": [
+          {
+            "Ref": "ELBSecurityGroup"
+          }
+        ],
+        "HealthCheck": {
+          "Target": "HTTP:8080/emailservice-1.0/rest/testUrl",
+          "HealthyThreshold": "3",
+          "UnhealthyThreshold": "5",
+          "Interval": "30",
+          "Timeout": "5"
+        },
+        "ConnectionDrainingPolicy": {
+          "Enabled": "true",
+          "Timeout": "200"
+        }
+      }
+    },
+    "OutboundRuleAppServer": {
+      "Type": "AWS::EC2::SecurityGroupEgress",
+      "Properties": {
+        "IpProtocol": "tcp",
+        "FromPort": "8080",
+        "ToPort": "8080",
+        "DestinationSecurityGroupId": {
+          "Fn::GetAtt": [
+            "SecurityGroups",
+            "GroupId"
+          ]
+        },
+        "GroupId": {
+          "Fn::GetAtt": [
+            "ELBSecurityGroup",
+            "GroupId"
+          ]
+        }
+      }
+    },
+    "ELBSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Security group for the ELB",
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "80",
+            "ToPort": "80",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "8080",
+            "ToPort": "8080",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "25",
+            "ToPort": "25",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "InboundRuleAppServer": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "IpProtocol": "tcp",
+        "FromPort": "8080",
+        "ToPort": "8080",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "ELBSecurityGroup",
+            "GroupId"
+          ]
+        },
+        "GroupId": {
+          "Fn::GetAtt": [
+            "SecurityGroups",
+            "GroupId"
+          ]
+        }
+      }
+    },
+    "ScaleUpPolicy": {
+      "Type": "AWS::AutoScaling::ScalingPolicy",
+      "Properties": {
+        "AdjustmentType": "ChangeInCapacity",
+        "AutoScalingGroupName": {
+          "Ref": "AutoScalingGroupForAppServer"
+        },
+        "Cooldown": "30",
+        "ScalingAdjustment": "1"
+      }
+    },
+    "ScaleDownPolicy": {
+      "Type": "AWS::AutoScaling::ScalingPolicy",
+      "Properties": {
+        "AdjustmentType": "ChangeInCapacity",
+        "AutoScalingGroupName": {
+          "Ref": "AutoScalingGroupForAppServer"
+        },
+        "Cooldown": "30",
+        "ScalingAdjustment": "-1"
+      }
+    },
+    "CPUAlarmLessThanForAppServer": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "CPU alarm for my instance",
+        "MetricName": "CPUUtilization",
+        "Namespace": "AWS/EC2",
+        "Statistic": "Average",
+        "Period": "60",
+        "EvaluationPeriods": "3",
+        "Threshold": "30",
+        "ComparisonOperator": "LessThanOrEqualToThreshold",
+        "AlarmActions": [
+          {
+            "Ref": "ScaleDownPolicy"
+          }
+        ],
+        "Dimensions": [
+          {
+            "Name": "AutoScalingGroupName",
+            "Value": {
+              "Ref": "AutoScalingGroupForAppServer"
+            }
+          }
+        ]
+      }
+    },
+    "CPUAlarmGreaterThanForAppServer": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "CPU alarm for my instance",
+        "MetricName": "CPUUtilization",
+        "Namespace": "AWS/EC2",
+        "Statistic": "Average",
+        "Period": "60",
+        "EvaluationPeriods": "3",
+        "Threshold": "80",
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "AlarmActions": [
+          {
+            "Ref": "ScaleUpPolicy"
+          }
+        ],
+        "Dimensions": [
+          {
+            "Name": "AutoScalingGroupName",
+            "Value": {
+              "Ref": "AutoScalingGroupForAppServer"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "Mappings": {
+    "AWSRegion2AMI": {
+      "us-east-1": {
+        "AMI": "ami-b73b63a0"
+      },
+      "us-east-2": {
+        "AMI": "ami-58277d3d"
+      },
+      "us-west-2": {
+        "AMI": "ami-5ec1673e"
+      },
+      "us-west-1": {
+        "AMI": "ami-23e8a343"
+      },
+      "eu-west-1": {
+        "AMI": "ami-9398d3e0"
+      },
+      "eu-central-1": {
+        "AMI": "ami-f9619996"
+      },
+      "ap-southeast-1": {
+        "AMI": "ami-b953f2da"
+      },
+      "ap-northeast-2": {
+        "AMI": "ami-983ce8f6"
+      },
+      "ap-northeast-1": {
+        "AMI": "ami-0c11b26d"
+      },
+      "ap-southeast-2": {
+        "AMI": "ami-db704cb8"
+      },
+      "ap-south-1": {
+        "AMI": "ami-34b4c05b"
+      },
+      "sa-east-1": {
+        "AMI": "ami-97831ffb"
+      },
+      "ca-central-1": {
+        "AMI": "ami-b48b39d0"
+      },
+      "eu-west-2": {
+        "AMI": "ami-d6cbc1b2"
+      }
+    }
+  },
+  "Outputs": {
+    "ElasticLoadBalancerForAppServer": {
+      "Description": "The URL of the website",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "http://",
+            {
+              "Fn::GetAtt": [
+                "ElasticLoadBalancerForAppServer",
+                "DNSName"
+              ]
+            },
+            "/emailservice-1.0/rest/testUrl"
+          ]
+        ]
+      }
+    }
+  }
+}

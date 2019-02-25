@@ -1,0 +1,3050 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Final Template For vpc,cloudwatch",
+  "Metadata": {
+    "AWS::CloudFormation::Interface": {
+      "ParameterGroups": [
+	    {
+          "Label": {
+            "default": "VPC Configuration"
+          },
+          "Parameters": [
+            "AvailabilityZones",
+			 "NumberOfAZs",
+			  "NATInstanceType"
+          ]
+        },
+		{
+                    "Label": {
+                        "default": "Network Configuration"
+                    },
+                    "Parameters": [
+                         "CreateAdditionalPrivateSubnets"
+                        
+                       ]
+                },
+				
+        {
+          "Label": {
+            "default": "ApplicationServer Configuration"
+          },
+          "Parameters": [
+            "KeyName",
+            "NATInstanceType",
+			"InstanceType1"
+          ]
+        },
+        {
+          "Label": {
+            "default": "EmailServer Configuration"
+          },
+          "Parameters": [
+            "EmailAddress",
+			"DomainName",
+            "InstanceType"
+			
+          ]
+        },
+		
+        {
+          "Label": {
+            "default": "AutoScalingGroup For ApplicationServer"
+          },
+          "Parameters": [
+            "MaxSize",
+            "DesiredCapacity",
+            "ThresoldSQSMessages"
+          ]
+        },
+		{
+          "Label": {
+            "default": "AutoScalingGroup For EmailServer"
+          },
+          "Parameters": [
+            "MaxSize1",
+            "DesiredCapacity1"
+          ]
+        },
+        {
+          "Label": {
+            "default": "Git Configuration"
+          },
+          "Parameters": [
+            "BranchName",
+            "Username",
+            "Password"
+          ]
+        },
+      
+        
+        {
+          "Label": {
+            "default": "S3 bucket Configuration"
+          },
+          "Parameters": [
+            "UseExistingBucket",
+            "S3BucketName"
+          ]
+        },
+        {
+          "Label": {
+            "default": "DynamoDB Configuration"
+          },
+          "Parameters": [
+            "ReadCapacityUnits",
+            "WriteCapacityUnits"
+          ]
+        },
+        {
+          "Label": {
+            "default": "SQS Configuration"
+          },
+          "Parameters": [
+            "queue1"
+          ]
+        },
+        {
+          "Label": {
+            "default": "SNS Configuration"
+          },
+          "Parameters": [
+            "EmailSubscribe"
+          ]
+        }
+      ],
+      "ParameterLabels": {
+	   "CreateAdditionalPrivateSubnets": {
+       "default": "Create additional private subnets with dedicated network ACLs"
+        },
+	   "NumberOfAZs": {
+       "default": "Number of Availability Zones"
+        },
+        "AvailabilityZones": {
+          "default": "Availability Zones"
+        },
+        "ThresoldSQSMessages": {
+          "default": "ThresoldSQSMessages"
+        },
+        "queue1": {
+          "default": "SQSName"
+        },
+		 "DomainName": {
+          "default": "DomainName"
+        },
+        "ReadCapacityUnits": {
+          "default": "ReadCapacityUnits"
+        },
+        "WriteCapacityUnits": {
+          "default": "WriteCapacityUnits"
+        },
+        "S3BucketName": {
+          "default": "S3BucketName"
+        },
+        "UseExistingBucket": {
+          "default": "UseExistingBucket"
+        },
+        "EmailAddress": {
+          "default": "EmailAddress"
+        },
+        "MaxSize": {
+          "default": "MaxSize"
+        },
+        "DesiredCapacity": {
+          "default": "DesiredCapacity"
+        },
+		 "MaxSize1": {
+          "default": "MaxSize"
+        },
+        "DesiredCapacity1": {
+          "default": "DesiredCapacity"
+        },
+        "BranchName": {
+          "default": "BranchName"
+        },
+        "Username": {
+          "default": "Username"
+        },
+        "Password": {
+          "default": "Password"
+        },
+	   "InstanceType": {
+          "default": "InstanceType"
+        },
+        "InstanceType1": {
+          "default": "InstanceType"
+        },
+        "NATInstanceType": {
+          "default": "NATInstanceType"
+        },
+        "KeyName": {
+          "default": "KeyName"
+        },
+        "EmailSubscribe": {
+          "default": "EmailSubscribe"
+        }
+      }
+    }
+  },
+  "Parameters": {
+   "CreateAdditionalPrivateSubnets": {
+            "AllowedValues": [
+                "true",
+                "false"
+            ],
+            "Default": "true",
+            "Description": "Set to true to create a network ACL protected subnet in each Availability Zone. If false, the CIDR parameters for those subnets will be ignored.",
+            "Type": "String"
+        },
+    "AvailabilityZones": {
+      "Description": "List of Availability Zones to use for the subnets in the VPC.",
+      "Type": "List<AWS::EC2::AvailabilityZone::Name>"
+    },
+	 "NumberOfAZs": {
+            "AllowedValues": [
+                "2"
+              ],
+            "Default": "2",
+            "Description": "Number of Availability Zones to use in the VPC. This must match your selections in the list of Availability Zones parameter.",
+            "Type": "String"
+        },
+    "KeyName": {
+      "Description": "Please select the name of an existing EC2 Keypair to enable SSH access to the instances.",
+      "Type": "AWS::EC2::KeyPair::KeyName",
+	  "Default": "singapore"
+    },
+    "NATInstanceType": {
+      "AllowedValues": [
+        "t2.nano",
+        "t2.micro",
+        "t2.small",
+        "t2.medium",
+        "t2.large",
+        "m3.medium",
+        "m3.large",
+        "m4.large"
+      ],
+      "Default": "t2.small",
+      "Description": "Amazon EC2 instance type for the NAT instances. This is used only if the region does not support NAT gateways.",
+      "Type": "String"
+    },
+	 "InstanceType1": {
+      "Description": "Please select the type of EC2 instance to launch",
+      "Type": "String",
+      "AllowedValues": [
+        "t2.nano",
+        "t2.micro",
+        "t2.small",
+        "t2.medium",
+        "t2.large",
+        "m3.medium",
+        "m3.large",
+        "m4.large"
+      ],
+      "Default": "t2.medium"
+    },
+    "InstanceType": {
+      "Description": "Please select the type of EC2 instance to launch",
+      "Type": "String",
+      "AllowedValues": [
+        "t2.nano",
+        "t2.micro",
+        "t2.small",
+        "t2.medium",
+        "t2.large",
+        "m3.medium",
+        "m3.large",
+        "m4.large"
+      ],
+      "Default": "t2.micro"
+    },
+    "ThresoldSQSMessages": {
+      "Default": "100000",
+      "Description": "Please Enter the no of SQS messages after which the appserver to be scaledup for consuming the messages",
+      "Type": "String"
+    },
+    "queue1": {
+      "Description": " Please Enter the name for a Queue",
+      "Type": "String",
+	  "Default": "queue"
+    },
+    "ReadCapacityUnits": {
+      "Description": "Please Enter provisioned read throughput",
+      "Type": "Number",
+      "Default": "5",
+      "MinValue": "5",
+      "MaxValue": "10000",
+      "ConstraintDescription": "must be between 5 and 10000"
+    },
+    "WriteCapacityUnits": {
+      "Description": "Please Enter provisioned write throughput",
+      "Type": "Number",
+      "Default": "10",
+      "MinValue": "5",
+      "MaxValue": "10000",
+      "ConstraintDescription": "must be between 5 and 10000"
+    },
+    "UseExistingBucket": {
+      "Description": "Please select any one,(True/False),If you want to create new bucket choose FALSE",
+      "Type": "String",
+      "Default": "false",
+      "AllowedValues": [
+        "true",
+        "false"
+      ]
+    },
+    "S3BucketName": {
+      "Description": "Please enter the unique bucket name should be within 8 characters, Leave the bucket name empty to create bucket with default random name",
+      "Type": "String",
+      "AllowedPattern": "[a-z0-9]*"
+    },
+    "EmailAddress": {
+      "Type": "String",
+      "Description": "Please Enter the EmailAddress for sending the sample test Email for confirmation of successfull setup of email server (Eg:Example@gmail.com) ",
+      "AllowedPattern": "^[\\w-\\+]+(\\.[\\w]+)*@[\\w-]+(\\.[\\w]+)*(\\.[a-z]{2,})$",
+    "Default": "sample@domainname.com"
+   },
+    "MaxSize": {
+      "Description": "Please Enter the maximum No of instances for AutoScaling group",
+      "Type": "Number",
+      "Default": "4",
+      "MinValue": "2"
+    },
+    "DesiredCapacity": {
+      "Description": "Please Enter the desired capacity but it should be in between max and min size(2)",
+      "Type": "String",
+      "Default": "2"
+    },
+	 "MaxSize1": {
+      "Description": "Please Enter the maximum No of instances for AutoScaling group",
+      "Type": "Number",
+      "Default": "4",
+      "MinValue": "2"
+    },
+    "DesiredCapacity1": {
+      "Description": "Please Enter the desired capacity but it should be in between max and min size(2)",
+      "Type": "String",
+      "Default": "2"
+    },
+	  "DomainName": {
+      "Description": "Please Enter the Domain name of company (Eg: XXXXXX.com/in)",
+      "Type": "String",
+	   "Default": "moxieit.com"
+    },
+    "BranchName": {
+      "Default": "master",
+      "Description": "Please Enter the Branchname for GitHub",
+      "Type": "String"
+    },
+    "Password": {
+      "Default": "Sarat%40123#",
+      "Description": "Please Enter the password for GitHub, If your password contains @ please replace the value with %40 ",
+      "Type": "String",
+      "NoEcho": "true"
+    },
+    "Username": {
+      "Default": "sarataws",
+      "Description": "Please Enter the username for GitHub",
+      "Type": "String"
+    },
+    "EmailSubscribe": {
+      "Description": "Email address to notify if there are any operational issues",
+      "Type": "String",
+      "AllowedPattern": "([a-zA-Z0-9_\\-\\.]+)@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.)|(([a-zA-Z0-9\\-]+\\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\\]?)",
+      "ConstraintDescription": "must be a valid email address.",
+      "Default": "sample@domainname.com"
+   }
+  },
+  "Conditions": {
+  "3AZCondition": {
+            "Fn::Or": [
+                {
+                    "Fn::Equals": [
+                        {
+                            "Ref": "NumberOfAZs"
+                        },
+                        "3"
+                    ]
+                },
+                {
+                    "Condition": "4AZCondition"
+                }
+            ]
+        },
+        "4AZCondition": {
+            "Fn::Equals": [
+                {
+                    "Ref": "NumberOfAZs"
+                },
+                "4"
+            ]
+        },
+        "AdditionalPrivateSubnetsCondition": {
+            "Fn::Equals": [
+                {
+                    "Ref": "CreateAdditionalPrivateSubnets"
+                },
+                "true"
+            ]
+        },
+        "AdditionalPrivateSubnets&3AZCondition": {
+            "Fn::And": [
+                {
+                    "Condition": "AdditionalPrivateSubnetsCondition"
+                },
+                {
+                    "Condition": "3AZCondition"
+                }
+            ]
+        },
+        "AdditionalPrivateSubnets&4AZCondition": {
+            "Fn::And": [
+                {
+                    "Condition": "AdditionalPrivateSubnetsCondition"
+                },
+                {
+                    "Condition": "4AZCondition"
+                }
+            ]
+        },
+        "NATInstanceCondition": {
+            "Fn::Or": [
+                {
+                    "Fn::Equals": [
+                        {
+                            "Ref": "AWS::Region"
+                        },
+                        "sa-east-1"
+                    ]
+                },
+                {
+                    "Fn::Equals": [
+                        {
+                            "Ref": "AWS::Region"
+                        },
+                        "us-gov-west-1"
+                    ]
+                },
+                {
+                    "Fn::Equals": [
+                        {
+                            "Ref": "AWS::Region"
+                        },
+                        "cn-north-1"
+                    ]
+                }
+            ]
+        },
+        "NATGatewayCondition": {
+            "Fn::Not": [
+                {
+                    "Condition": "NATInstanceCondition"
+                }
+            ]
+        },
+        "NATInstance&3AZCondition": {
+            "Fn::And": [
+                {
+                    "Condition": "NATInstanceCondition"
+                },
+                {
+                    "Condition": "3AZCondition"
+                }
+            ]
+        },
+        "NATInstance&4AZCondition": {
+            "Fn::And": [
+                {
+                    "Condition": "NATInstanceCondition"
+                },
+                {
+                    "Condition": "4AZCondition"
+                }
+            ]
+        },
+        "NATGateway&3AZCondition": {
+            "Fn::And": [
+                {
+                    "Condition": "NATGatewayCondition"
+                },
+                {
+                    "Condition": "3AZCondition"
+                }
+            ]
+        },
+        "NATGateway&4AZCondition": {
+            "Fn::And": [
+                {
+                    "Condition": "NATGatewayCondition"
+                },
+                {
+                    "Condition": "4AZCondition"
+                }
+            ]
+        },
+        "VPCEndpointCondition": {
+            "Fn::Not": [
+                {
+                    "Fn::Or": [
+                        {
+                            "Fn::Equals": [
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                "us-gov-west-1"
+                            ]
+                        },
+                        {
+                            "Fn::Equals": [
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                "cn-north-1"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+    "BucketExists": {
+      "Fn::Equals": [
+        {
+          "Ref": "UseExistingBucket"
+        },
+        "false"
+      ]
+    },
+	"BucketExistsTrue": {
+      "Fn::Equals": [
+        {
+          "Ref": "UseExistingBucket"
+        },
+        "true"
+      ]
+    },
+    "BucketNameEmpty": {
+      "Fn::Equals": [
+        {
+          "Ref": "S3BucketName"
+        },
+        ""
+      ]
+    },
+    "BucketExistsAndBucketNameEmpty": {
+      "Fn::And": [
+        {
+          "Condition": "BucketExists"
+        },
+        {
+          "Condition": "BucketNameEmpty"
+        }
+      ]
+    },
+    "BucketExistsAndBucketNameNotEmpty": {
+      "Fn::And": [
+        {
+          "Condition": "BucketExists"
+        },
+        {
+          "Fn::Not": [
+            {
+              "Condition": "BucketNameEmpty"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Resources": {
+  "AlarmGreaterThanAppServer": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "AppServer alarm for my instance",
+        "MetricName": "AppServer",
+        "Namespace": "AWS/EC2",
+        "Statistic": "Average",
+        "Period": "60",
+        "EvaluationPeriods": "3",
+        "Threshold": "80",
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "AlarmActions": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:automate:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":ec2:recover"
+              ]
+            ]
+          }
+        ],
+        "Dimensions": [
+          {
+            "Name": "InstanceId",
+            "Value": {
+              "Ref": "LaunchConfigForAppServer"
+            }
+          }
+        ]
+      }
+    },
+    "AlarmGreaterThanForEmailServer": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "EmailServer alarm for my instance",
+        "MetricName": "EmailServer",
+        "Namespace": "AWS/EC2",
+        "Statistic": "Average",
+        "Period": "60",
+        "EvaluationPeriods": "3",
+        "Threshold": "80",
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "AlarmActions": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:automate:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":ec2:recover"
+              ]
+            ]
+          }
+        ],
+        "Dimensions": [
+          {
+            "Name": "InstanceId",
+            "Value": {
+              "Ref": "LaunchConfigForEmailServer"
+            }
+          }
+        ]
+      }
+    },
+    "AlarmTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "Subscription": [
+          {
+            "Endpoint": {
+              "Ref": "EmailSubscribe"
+            },
+            "Protocol": "email"
+          }
+        ]
+      }
+    },
+    "SQSScaleUpPolicyForAppServer": {
+      "Type": "AWS::AutoScaling::ScalingPolicy",
+      "Properties": {
+        "AdjustmentType": "ChangeInCapacity",
+        "AutoScalingGroupName": {
+          "Ref": "AutoScalingGroupForAppServer"
+        },
+        "Cooldown": "180",
+        "ScalingAdjustment": "1"
+      }
+    },
+    "QueueDepthAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "Alarm if queue depth grows beyond 1000000 messages",
+        "Namespace": "AWS/SQS",
+        "MetricName": "AlarmSQS",
+        "Dimensions": [
+          {
+            "Name": "QueueName",
+            "Value": {
+              "Fn::GetAtt": [
+                "queue",
+                "QueueName"
+              ]
+            }
+          }
+        ],
+        "Statistic": "Sum",
+        "Period": "60",
+        "EvaluationPeriods": "3",
+        "Threshold": {
+          "Ref": "ThresoldSQSMessages"
+        },
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "AlarmActions": [
+          {
+            "Ref": "SQSScaleUpPolicyForAppServer"
+          }
+        ],
+        "InsufficientDataActions": [
+          {
+            "Ref": "AlarmTopic"
+          }
+        ]
+      }
+    },
+    "SNSAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "Alarm if queue depth grows beyond 1000000 messages",
+        "Namespace": "AWS/SNS",
+        "MetricName": "AlarmSNS",
+        "Dimensions": [
+          {
+            "Name": "QueueName",
+            "Value": {
+              "Fn::GetAtt": [
+                "queue",
+                "QueueName"
+              ]
+            }
+          }
+        ],
+        "Statistic": "Sum",
+        "Period": "60",
+        "EvaluationPeriods": "3",
+        "Threshold": "100000",
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "AlarmActions": [
+          {
+            "Ref": "AlarmTopic"
+          }
+        ],
+        "InsufficientDataActions": [
+          {
+            "Ref": "AlarmTopic"
+          }
+        ]
+      }
+    },
+	"DHCPOptions": {
+            "Type": "AWS::EC2::DHCPOptions",
+            "Properties": {
+                "DomainNameServers": [
+                    "AmazonProvidedDNS"
+                ]
+            }
+        },
+ "VPC": {
+            "Type": "AWS::EC2::VPC",
+            "Properties": {
+               "CidrBlock" : "20.0.0.0/16",
+			  "EnableDnsSupport": "true",
+                "EnableDnsHostnames": "true",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Ref": "AWS::StackName"
+                        }
+                    }
+                ]
+            }},
+"VPCDHCPOptionsAssociation": {
+            "Type": "AWS::EC2::VPCDHCPOptionsAssociation",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPC"
+                },
+                "DhcpOptionsId": {
+                    "Ref": "DHCPOptions"
+                }
+            }
+        },
+        "InternetGateway": {
+            "Type": "AWS::EC2::InternetGateway",
+            "Properties": {
+                "Tags": [
+                    {
+                        "Key": "Network",
+                        "Value": "Public"
+                    }
+                ]
+            }
+        },
+"VPCGatewayAttachment": {
+            "Type": "AWS::EC2::VPCGatewayAttachment",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPC"
+                },
+                "InternetGatewayId": {
+                    "Ref": "InternetGateway"
+                }
+            }
+        },
+        "PrivateSubnet1A": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPC"
+                },
+                "CidrBlock": "20.0.0.0/19",
+                "AvailabilityZone": {
+                    "Fn::Select": [
+                        "0",
+                        {
+                            "Ref": "AvailabilityZones"
+                        }
+                    ]
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Application Server 1"
+                    },
+                    {
+                        "Key": "Network",
+                        "Value": "Private"
+                    }
+                ]
+            }
+        },
+        "PrivateSubnet1B": {
+            "Condition": "AdditionalPrivateSubnetsCondition",
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPC"
+                },
+                "CidrBlock":"20.0.192.0/21",
+                "AvailabilityZone": {
+                    "Fn::Select": [
+                        "0",
+                        {
+                            "Ref": "AvailabilityZones"
+                        }
+                    ]
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Email Server 1"
+                    },
+                    {
+                        "Key": "Network",
+                        "Value": "Private"
+                    }
+                ]
+            }
+        },
+        "PrivateSubnet2A": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPC"
+                },
+                "CidrBlock": "20.0.32.0/19",
+                "AvailabilityZone": {
+                    "Fn::Select": [
+                        "1",
+                        {
+                            "Ref": "AvailabilityZones"
+                        }
+                    ]
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Email Server 2"
+                    },
+                    {
+                        "Key": "Network",
+                        "Value": "Private"
+                    }
+                ]
+            }
+        },
+        "PrivateSubnet2B": {
+            "Condition": "AdditionalPrivateSubnetsCondition",
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPC"
+                },
+                "CidrBlock": "20.0.200.0/21",
+                "AvailabilityZone": {
+                    "Fn::Select": [
+                        "1",
+                        {
+                            "Ref": "AvailabilityZones"
+                        }
+                    ]
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Application Server 2"
+                    },
+                    {
+                        "Key": "Network",
+                        "Value": "Private"
+                    }
+                ]
+            }
+        },
+        "PublicSubnet1": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPC"
+                },
+                "CidrBlock":  "20.0.128.0/20",
+                "AvailabilityZone": {
+                    "Fn::Select": [
+                        "0",
+                        {
+                            "Ref": "AvailabilityZones"
+                        }
+                    ]
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": " Web Server 1"
+                    },
+                    {
+                        "Key": "Network",
+                        "Value": "Public"
+                    }
+                ],
+                "MapPublicIpOnLaunch": true
+            }
+        },
+        "PublicSubnet2": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPC"
+                },
+                "CidrBlock":  "20.0.144.0/20",
+                "AvailabilityZone": {
+                    "Fn::Select": [
+                        "1",
+                        {
+                            "Ref": "AvailabilityZones"
+                        }
+                    ]
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Web Server 2"
+                    },
+                    {
+                        "Key": "Network",
+                        "Value": "Public"
+                    }
+                ],
+                "MapPublicIpOnLaunch": true
+            }
+        },
+        "PrivateSubnet1ARouteTable": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPC"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Application Server 1-RT"
+                    },
+                    {
+                        "Key": "Network",
+                        "Value": "Private"
+                    }
+                ]
+            }
+        },
+        "PrivateSubnet1ARoute": {
+            "Type": "AWS::EC2::Route",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PrivateSubnet1ARouteTable"
+                },
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "InstanceId": {
+                    "Fn::If": [
+                        "NATInstanceCondition",
+                        {
+                            "Ref": "NATInstance1"
+                        },
+                        {
+                            "Ref": "AWS::NoValue"
+                        }
+                    ]
+                },
+                "NatGatewayId": {
+                    "Fn::If": [
+                        "NATGatewayCondition",
+                        {
+                            "Ref": "NATGateway1"
+                        },
+                        {
+                            "Ref": "AWS::NoValue"
+                        }
+                    ]
+                }
+            }
+        },
+        "PrivateSubnet1ARouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "PrivateSubnet1A"
+                },
+                "RouteTableId": {
+                    "Ref": "PrivateSubnet1ARouteTable"
+                }
+            }
+        },
+        "PrivateSubnet2ARouteTable": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPC"
+					                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Application Server 2-RT"
+                    },
+                    {
+                        "Key": "Network",
+                        "Value": "Private"
+                    }
+                ]
+            }
+        },
+        "PrivateSubnet2ARoute": {
+            "Type": "AWS::EC2::Route",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PrivateSubnet2ARouteTable"
+                },
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "InstanceId": {
+                    "Fn::If": [
+                        "NATInstanceCondition",
+                        {
+                            "Ref": "NATInstance2"
+                        },
+                        {
+                            "Ref": "AWS::NoValue"
+                        }
+                    ]
+                },
+                "NatGatewayId": {
+                    "Fn::If": [
+                        "NATGatewayCondition",
+                        {
+                            "Ref": "NATGateway2"
+                        },
+                        {
+                            "Ref": "AWS::NoValue"
+                        }
+                    ]
+                }
+            }
+        },
+        "PrivateSubnet2ARouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "PrivateSubnet2A"
+                },
+                "RouteTableId": {
+                    "Ref": "PrivateSubnet2ARouteTable"
+                }
+            }
+        },
+               "PrivateSubnet1BRouteTable": {
+            "Condition": "AdditionalPrivateSubnetsCondition",
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPC"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Email Server 1-RT"
+                    },
+                    {
+                        "Key": "Network",
+                        "Value": "Private"
+                    }
+                ]
+            }
+        },
+        "PrivateSubnet1BRoute": {
+            "Condition": "AdditionalPrivateSubnetsCondition",
+            "Type": "AWS::EC2::Route",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PrivateSubnet1BRouteTable"
+                },
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "InstanceId": {
+                    "Fn::If": [
+                        "NATInstanceCondition",
+                        {
+                            "Ref": "NATInstance1"
+                        },
+                        {
+                            "Ref": "AWS::NoValue"
+                        }
+                    ]
+                },
+                "NatGatewayId": {
+                    "Fn::If": [
+                        "NATGatewayCondition",
+						
+                        {
+                            "Ref": "NATGateway1"
+                        },
+                        {
+                            "Ref": "AWS::NoValue"
+                        }
+                    ]
+                }
+            }
+        },
+        "PrivateSubnet1BRouteTableAssociation": {
+            "Condition": "AdditionalPrivateSubnetsCondition",
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "PrivateSubnet1B"
+                },
+                "RouteTableId": {
+                    "Ref": "PrivateSubnet1BRouteTable"
+                }
+            }
+        },
+        "PrivateSubnet1BNetworkAcl": {
+            "Condition": "AdditionalPrivateSubnetsCondition",
+            "Type": "AWS::EC2::NetworkAcl",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPC"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "NACL Protected subnet 1"
+                    },
+                    {
+                        "Key": "Network",
+                        "Value": "NACL Protected"
+                    }
+                ]
+            }
+        },
+        "PrivateSubnet1BNetworkAclEntryInbound": {
+            "Condition": "AdditionalPrivateSubnetsCondition",
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": "0.0.0.0/0",
+                "Egress": "false",
+                "NetworkAclId": {
+                    "Ref": "PrivateSubnet1BNetworkAcl"
+                },
+                "Protocol": "-1",
+                "RuleAction": "allow",
+                "RuleNumber": "100"
+            }
+        },
+        "PrivateSubnet1BNetworkAclEntryOutbound": {
+            "Condition": "AdditionalPrivateSubnetsCondition",
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": "0.0.0.0/0",
+                "Egress": "true",
+                "NetworkAclId": {
+                    "Ref": "PrivateSubnet1BNetworkAcl"
+                },
+                "Protocol": "-1",
+                "RuleAction": "allow",
+                "RuleNumber": "100"
+            }
+        },
+        "PrivateSubnet1BNetworkAclAssociation": {
+            "Condition": "AdditionalPrivateSubnetsCondition",
+            "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "PrivateSubnet1B"
+                },
+                "NetworkAclId": {
+                    "Ref": "PrivateSubnet1BNetworkAcl"
+                }
+            }
+        },
+        "PrivateSubnet2BRouteTable": {
+            "Condition": "AdditionalPrivateSubnetsCondition",
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPC"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Email Server 2-RT"
+                    },
+                    {
+                        "Key": "Network",
+                        "Value": "Private"
+                    }
+                ]
+            }
+        },
+        "PrivateSubnet2BRoute": {
+            "Condition": "AdditionalPrivateSubnetsCondition",
+            "Type": "AWS::EC2::Route",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PrivateSubnet2BRouteTable"
+                },
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "InstanceId": {
+                    "Fn::If": [
+                        "NATInstanceCondition",
+                        {
+                            "Ref": "NATInstance2"
+                        },
+                        {
+                            "Ref": "AWS::NoValue"
+                        }
+                    ]
+                },
+                "NatGatewayId": {
+                    "Fn::If": [
+                        "NATGatewayCondition",
+                        {
+                            "Ref": "NATGateway2"
+                        },
+                        {
+                            "Ref": "AWS::NoValue"
+                        }
+                    ]
+                }
+            }
+        },
+        "PrivateSubnet2BRouteTableAssociation": {
+            "Condition": "AdditionalPrivateSubnetsCondition",
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "PrivateSubnet2B"
+                },
+                "RouteTableId": {
+                    "Ref": "PrivateSubnet2BRouteTable"
+                }
+            }
+        },
+        "PrivateSubnet2BNetworkAcl": {
+            "Condition": "AdditionalPrivateSubnetsCondition",
+            "Type": "AWS::EC2::NetworkAcl",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPC"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "NACL Protected subnet 2"
+                    },
+                    {
+                        "Key": "Network",
+                        "Value": "NACL Protected"
+                    }
+                ]
+            }
+        },
+        "PrivateSubnet2BNetworkAclEntryInbound": {
+            "Condition": "AdditionalPrivateSubnetsCondition",
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": "0.0.0.0/0",
+                "Egress": "false",
+                "NetworkAclId": {
+                    "Ref": "PrivateSubnet2BNetworkAcl"
+                },
+                "Protocol": "-1",
+                "RuleAction": "allow",
+                "RuleNumber": "100"
+            }
+        },
+        "PrivateSubnet2BNetworkAclEntryOutbound": {
+            "Condition": "AdditionalPrivateSubnetsCondition",
+            "Type": "AWS::EC2::NetworkAclEntry",
+            "Properties": {
+                "CidrBlock": "0.0.0.0/0",
+                "Egress": "true",
+                "NetworkAclId": {
+                    "Ref": "PrivateSubnet2BNetworkAcl"
+                },
+                "Protocol": "-1",
+                "RuleAction": "allow",
+                "RuleNumber": "100"
+            }
+        },
+        "PrivateSubnet2BNetworkAclAssociation": {
+            "Condition": "AdditionalPrivateSubnetsCondition",
+            "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "PrivateSubnet2B"
+                },
+                "NetworkAclId": {
+                    "Ref": "PrivateSubnet2BNetworkAcl"
+                }
+            }
+        },      
+        "PublicSubnetRouteTable": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPC"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Public Subnets"
+                    },
+                    {
+                        "Key": "Network",
+                        "Value": "Public"
+                    }
+                ]
+            }
+        },
+        "PublicSubnetRoute": {
+            "DependsOn": "VPCGatewayAttachment",
+            "Type": "AWS::EC2::Route",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PublicSubnetRouteTable"
+                },
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "GatewayId": {
+                    "Ref": "InternetGateway"
+                }
+            }
+        },
+        "PublicSubnet1RouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "PublicSubnet1"
+                },
+                "RouteTableId": {
+                    "Ref": "PublicSubnetRouteTable"
+                }
+            }
+        },
+        "PublicSubnet2RouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "PublicSubnet2"
+                },
+                "RouteTableId": {
+                    "Ref": "PublicSubnetRouteTable"
+                }
+            }
+        },
+
+
+ "NAT1EIP": {
+            "DependsOn": "VPCGatewayAttachment",
+            "Type": "AWS::EC2::EIP",
+            "Properties": {
+                "Domain": "vpc",
+                "InstanceId": {
+                    "Fn::If": [
+                        "NATInstanceCondition",
+                        {
+                            "Ref": "NATInstance1"
+                        },
+                        {
+                            "Ref": "AWS::NoValue"
+                        }
+                    ]
+                }
+            }
+        },
+        "NAT2EIP": {
+            "DependsOn": "VPCGatewayAttachment",
+            "Type": "AWS::EC2::EIP",
+            "Properties": {
+                "Domain": "vpc",
+                "InstanceId": {
+                    "Fn::If": [
+                        "NATInstanceCondition",
+                        {
+                            "Ref": "NATInstance2"
+                        },
+                        {
+                            "Ref": "AWS::NoValue"
+                        }
+                    ]
+                }
+            }
+        }, 
+     
+  
+"NATGateway1": {
+            "Condition": "NATGatewayCondition",
+            "DependsOn": "VPCGatewayAttachment",
+            "Type": "AWS::EC2::NatGateway",
+            "Properties": {
+                "AllocationId": {
+                    "Fn::GetAtt": [
+                        "NAT1EIP",
+                        "AllocationId"
+                    ]
+                },                      
+                "SubnetId": {
+                    "Ref": "PublicSubnet1"
+                }
+            }
+        },
+        "NATGateway2": {
+            "Condition": "NATGatewayCondition",
+            "DependsOn": "VPCGatewayAttachment",
+            "Type": "AWS::EC2::NatGateway",
+            "Properties": {
+                "AllocationId": {
+                    "Fn::GetAtt": [
+                        "NAT2EIP",
+                        "AllocationId"
+                    ]
+                },                     
+                "SubnetId": {
+                    "Ref": "PublicSubnet2"
+                }
+            }
+        },
+        "NATInstance1": {
+            "Condition": "NATInstanceCondition",
+            "DependsOn": "VPCGatewayAttachment",
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "ImageId": {
+                    "Fn::FindInMap": [
+                        "AWSRegion2AMI",
+                        {
+                            "Ref": "AWS::Region"
+                        },
+                        "AWSNAT"
+                    ]
+                },
+                "InstanceType": {
+                    "Ref": "NATInstanceType"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "NAT1"
+                    }
+                ],
+                "NetworkInterfaces": [
+                    {
+                        "GroupSet": [
+                            {
+                                "Ref": "NATInstanceSecurityGroup"
+                            }
+                        ],
+                        "AssociatePublicIpAddress": "false",
+                        "DeviceIndex": "0",
+                        "DeleteOnTermination": "true",
+                        "SubnetId": {
+                            "Ref": "PublicSubnet1"
+                        }
+                    }
+                ],
+                "KeyName": {
+                    "Fn::If": [
+                        "NATInstanceCondition",
+                        {
+                            "Ref": "KeyName"
+                        },
+                        {
+                            "Ref": "AWS::NoValue"
+                        }
+                    ]
+                },
+                "SourceDestCheck": "false"
+            }
+        },
+        "NATInstance2": {
+            "Condition": "NATInstanceCondition",
+            "DependsOn": "VPCGatewayAttachment",
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "ImageId": {
+                    "Fn::FindInMap": [
+                        "AWSRegion2AMI",
+                        {
+                            "Ref": "AWS::Region"
+                        },
+                        "AWSNAT"
+                    ]
+                },
+                "InstanceType": {
+                    "Ref": "NATInstanceType"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "NAT2"
+                    }
+                ],
+                "NetworkInterfaces": [
+                    {
+                        "GroupSet": [
+                            {
+                                "Ref": "NATInstanceSecurityGroup"
+                            }
+                        ],
+                        "AssociatePublicIpAddress": "false",
+                        "DeviceIndex": "0",
+                        "DeleteOnTermination": "true",
+                        "SubnetId": {
+                            "Ref": "PublicSubnet2"
+                        }
+                    }
+                ],
+                "KeyName": {
+                    "Fn::If": [
+                        "NATInstanceCondition",
+                        {
+                            "Ref": "KeyName"
+                        },
+                        {
+                            "Ref": "AWS::NoValue"
+                        }
+                    ]
+                },
+                "SourceDestCheck": "false"
+            }
+        },
+ "NATInstanceSecurityGroup": {
+            "Condition": "NATInstanceCondition",
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Enables outbound internet access for the VPC via the NAT instances",
+                "VpcId": {
+                    "Ref": "VPC"
+                },
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "-1",
+                        "FromPort": "1",
+                        "ToPort": "65535",
+                        "CidrIp": "20.0.0.0/16"
+                           
+                        
+                    }
+                ]
+            }
+        },
+        "S3Endpoint": {
+            "Condition": "VPCEndpointCondition",
+            "Type": "AWS::EC2::VPCEndpoint",
+            "Properties": {
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": "*",
+                            "Effect": "Allow",
+                            "Resource": "*",
+                            "Principal": "*"
+                        }
+                    ]
+                },
+                "RouteTableIds": [
+                    {
+                        "Ref": "PrivateSubnet1ARouteTable"
+                    },
+                    {
+                        "Ref": "PrivateSubnet2ARouteTable"
+                    },
+                    {
+                        "Fn::If": [
+                            "AdditionalPrivateSubnetsCondition",
+                            {
+                                "Ref": "PrivateSubnet1BRouteTable"
+                            },
+                            {
+                                "Ref": "AWS::NoValue"
+                            }
+                        ]
+                    },
+                    {
+                        "Fn::If": [
+                            "AdditionalPrivateSubnetsCondition",
+                            {
+                                "Ref": "PrivateSubnet2BRouteTable"
+                            },
+                            {
+                                "Ref": "AWS::NoValue"
+                            }
+                        ]
+                    }
+                   ],
+                "ServiceName": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "com.amazonaws.",
+                            {
+                                "Ref": "AWS::Region"
+                            },
+                            ".s3"
+                        ]
+                    ]
+                },
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            }
+        },
+    "TableOfUsers": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "userId",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "userId",
+            "KeyType": "HASH"
+          }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": {
+            "Ref": "ReadCapacityUnits"
+          },
+          "WriteCapacityUnits": {
+            "Ref": "WriteCapacityUnits"
+          }
+        },
+        "TableName": "Users"
+      }
+    },
+    "TableOfAudience": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "userId",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "list",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "userId",
+            "KeyType": "HASH"
+          },
+          {
+            "AttributeName": "list",
+            "KeyType": "RANGE"
+          }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": {
+            "Ref": "ReadCapacityUnits"
+          },
+          "WriteCapacityUnits": {
+            "Ref": "WriteCapacityUnits"
+          }
+        },
+        "TableName": "Audience"
+      }
+    },
+    "TableOfAudienceList": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "emailId",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "id",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "id",
+            "KeyType": "HASH"
+          },
+          {
+            "AttributeName": "emailId",
+            "KeyType": "RANGE"
+          }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": {
+            "Ref": "ReadCapacityUnits"
+          },
+          "WriteCapacityUnits": {
+            "Ref": "WriteCapacityUnits"
+          }
+        },
+        "TableName": "AudienceList"
+      }
+    },
+    "TableOfUserReport": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "audienceMail",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "campaignUrl",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "campaignUrl",
+            "KeyType": "HASH"
+          },
+          {
+            "AttributeName": "audienceMail",
+            "KeyType": "RANGE"
+          }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": {
+            "Ref": "ReadCapacityUnits"
+          },
+          "WriteCapacityUnits": {
+            "Ref": "WriteCapacityUnits"
+          }
+        },
+        "TableName": "UserReport"
+      },
+      "DependsOn": "TableOfUsers"
+    },
+    "TableOfReport": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "audienceMail",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "campaignUrl",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "campaignUrl",
+            "KeyType": "HASH"
+          },
+          {
+            "AttributeName": "audienceMail",
+            "KeyType": "RANGE"
+          }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": {
+            "Ref": "ReadCapacityUnits"
+          },
+          "WriteCapacityUnits": {
+            "Ref": "WriteCapacityUnits"
+          }
+        },
+        "TableName": "Report"
+      },
+      "DependsOn": "TableOfAudienceList"
+    },
+    "TableOfUsersJwt": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "token",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "token",
+            "KeyType": "HASH"
+          }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": {
+            "Ref": "ReadCapacityUnits"
+          },
+          "WriteCapacityUnits": {
+            "Ref": "WriteCapacityUnits"
+          }
+        },
+        "TableName": "Users_Jwt"
+      }
+    },
+    "queue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": {
+          "Ref": "queue1"
+        },
+        "VisibilityTimeout": 30,
+        "MessageRetentionPeriod": 1209600
+      }
+    },
+    "RootRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com",
+                  "ec2.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "S3BucketPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "s3:ListAllMyBuckets",
+                  "Resource": "arn:aws:s3:::*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:ListBucket",
+                    "s3:GetBucketLocation"
+                  ],
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:s3:::",
+                         {"Fn::If": ["BucketExistsTrue", {"Ref":"S3BucketName"},{"Fn::If" :["BucketNameEmpty",{"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:PutObject",
+                    "s3:GetObject",
+                    "s3:DeleteObject"
+                  ],
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:s3:::",
+                        {"Fn::If": ["BucketExistsTrue", {"Ref":"S3BucketName"},{"Fn::If" :["BucketNameEmpty",{"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] },
+                        "/",
+                        "*"
+                      ]
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "PolicyName": "QueuePolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Sid": "AllowPermissions",
+                  "Effect": "Allow",
+                  "Action": [
+                    "sqs:*"
+                  ],
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:sqs:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":",
+                        {
+                          "Ref": "queue"
+                        }
+                      ]
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "PolicyName": "DynamoDBPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfUsers"
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfAudience"
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfAudienceList"
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfUserReport"
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfReport"
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfUsersJwt"
+                        }
+                      ]
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "RootInstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          {
+            "Ref": "RootRole"
+          }
+        ]
+      }
+    },
+    "MoxieitFolderWithUserBucketName": {
+      "Type": "AWS::S3::Bucket",
+      "Condition": "BucketExistsAndBucketNameNotEmpty",
+      "Properties": {
+        "BucketName": {
+          "Ref": "S3BucketName"
+        }
+      }
+    },
+    "MoxieitFolderWithOutUserBucketName": {
+      "Type": "AWS::S3::Bucket",
+      "Condition": "BucketExistsAndBucketNameEmpty"
+    },
+    "ELBSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Security group for the ELB",
+        "VpcId": {
+          "Ref": "VPC"
+        },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "80",
+            "ToPort": "80",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "8080",
+            "ToPort": "8080",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "25",
+            "ToPort": "25",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+   "ElasticLoadBalancerForAppServer" : {
+  	"Type" : "AWS::ElasticLoadBalancing::LoadBalancer",
+  	"Properties" : {
+    	 "Subnets" : [{ "Ref" : "PublicSubnet1" },
+           { "Ref" : "PublicSubnet2" } ],
+		    	"Listeners": [{
+      "LoadBalancerPort": "80",
+      "InstancePort": "8080",
+      "Protocol": "HTTP"
+    }],
+	"SecurityGroups" : [ { "Ref" : "ELBSecurityGroup" } ],
+    "HealthCheck": {
+      "Target": "HTTP:8080/emailservice-1.0/rest/testUrl",
+      "HealthyThreshold": "3",
+      "UnhealthyThreshold": "5",
+      "Interval": "30",
+      "Timeout": "5"
+    },
+    "ConnectionDrainingPolicy": {
+      "Enabled" : "true",
+      "Timeout" : "200"
+    }
+  }
+},
+	  "OutboundRuleAppServer": {
+      "Type": "AWS::EC2::SecurityGroupEgress",
+      "Properties":{
+        "IpProtocol": "tcp",
+        "FromPort": "8080",
+        "ToPort": "8080",
+        "DestinationSecurityGroupId": {
+          "Fn::GetAtt": [
+            "SecurityGroups",
+            "GroupId"
+          ]
+        },
+        "GroupId": {
+          "Fn::GetAtt": [
+            "ELBSecurityGroup",
+            "GroupId"
+          ]
+        }
+      }
+    },
+    "InboundRuleAppServer": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties":{
+        "IpProtocol": "tcp",
+        "FromPort": "8080",
+        "ToPort": "8080",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "ELBSecurityGroup",
+            "GroupId"
+          ]
+        },
+        "GroupId": {
+          "Fn::GetAtt": [
+            "SecurityGroups",
+            "GroupId"
+          ]
+        }
+      }
+    },
+    "SecurityGroups": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VPC"
+        },
+        "GroupDescription": "Enable SMTP access from the Internet and SSH/HTTP access from maintenance CIDR.",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "25",
+            "ToPort": "25",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "22",
+            "ToPort": "22",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "ScaleUpPolicyForAppServer": {
+      "Type": "AWS::AutoScaling::ScalingPolicy",
+      "Properties": {
+        "AdjustmentType": "ChangeInCapacity",
+        "AutoScalingGroupName": {
+          "Ref": "AutoScalingGroupForAppServer"
+        },
+        "Cooldown": "180",
+        "ScalingAdjustment": "1"
+      }
+    },
+    "ScaleDownPolicyForAppServer": {
+      "Type": "AWS::AutoScaling::ScalingPolicy",
+      "Properties": {
+        "AdjustmentType": "ChangeInCapacity",
+        "AutoScalingGroupName": {
+          "Ref": "AutoScalingGroupForAppServer"
+        },
+        "Cooldown": "180",
+        "ScalingAdjustment": "-1"
+      }
+    },
+    "ScaleUpPolicyEmailServer": {
+      "Type": "AWS::AutoScaling::ScalingPolicy",
+      "Properties": {
+        "AdjustmentType": "ChangeInCapacity",
+        "AutoScalingGroupName": {
+          "Ref": "AutoScalingGroupForEmailServer"
+        },
+        "Cooldown": "180",
+        "ScalingAdjustment": "1"
+      }
+    },
+    "ScaleDownPolicyEmailServer": {
+      "Type": "AWS::AutoScaling::ScalingPolicy",
+      "Properties": {
+        "AdjustmentType": "ChangeInCapacity",
+        "AutoScalingGroupName": {
+          "Ref": "AutoScalingGroupForEmailServer"
+        },
+        "Cooldown": "180",
+        "ScalingAdjustment": "-1"
+      }
+    },
+    "CPUAlarmLessThanForEmailServer": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "CPU alarm for my instance",
+        "MetricName": "CPUUtilization",
+        "Namespace": "AWS/EC2",
+        "Statistic": "Average",
+        "Period": "60",
+        "EvaluationPeriods": "3",
+        "Threshold": "30",
+        "ComparisonOperator": "LessThanOrEqualToThreshold",
+        "AlarmActions": [
+          {
+            "Ref": "ScaleDownPolicyEmailServer"
+          }
+        ],
+        "Dimensions": [
+          {
+            "Name": "AutoScalingGroupName",
+            "Value": {
+              "Ref": "AutoScalingGroupForEmailServer"
+            }
+          }
+        ]
+      }
+    },
+    "CPUAlarmGreaterThanForEmailServer": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "CPU alarm for my instance",
+        "MetricName": "CPUUtilization",
+        "Namespace": "AWS/EC2",
+        "Statistic": "Average",
+        "Period": "60",
+        "EvaluationPeriods": "3",
+        "Threshold": "80",
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "AlarmActions": [
+          {
+            "Ref": "ScaleUpPolicyEmailServer"
+          }
+        ],
+        "Dimensions": [
+          {
+            "Name": "AutoScalingGroupName",
+            "Value": {
+              "Ref": "AutoScalingGroupForEmailServer"
+            }
+          }
+        ]
+      }
+    },
+    "CPUAlarmLessThanForAppServer": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "CPU alarm for my instance",
+        "MetricName": "CPUUtilization",
+        "Namespace": "AWS/EC2",
+        "Statistic": "Average",
+        "Period": "60",
+        "EvaluationPeriods": "3",
+        "Threshold": "30",
+        "ComparisonOperator": "LessThanOrEqualToThreshold",
+        "AlarmActions": [
+          {
+            "Ref": "ScaleDownPolicyForAppServer"
+          }
+        ],
+        "Dimensions": [
+          {
+            "Name": "AutoScalingGroupName",
+            "Value": {
+              "Ref": "AutoScalingGroupForAppServer"
+            }
+          }
+        ]
+      }
+    },
+    "CPUAlarmGreaterThanForAppServer": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "CPU alarm for my instance",
+        "MetricName": "CPUUtilization",
+        "Namespace": "AWS/EC2",
+        "Statistic": "Average",
+        "Period": "60",
+        "EvaluationPeriods": "3",
+        "Threshold": "80",
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "AlarmActions": [
+          {
+            "Ref": "ScaleUpPolicyForAppServer"
+          }
+        ],
+        "Dimensions": [
+          {
+            "Name": "AutoScalingGroupName",
+            "Value": {
+              "Ref": "AutoScalingGroupForAppServer"
+            }
+          }
+        ]
+      }
+    },
+    "AutoScalingGroupForAppServer": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties": {
+        "DesiredCapacity": {
+          "Ref": "DesiredCapacity"
+        },
+        "HealthCheckGracePeriod": "30",
+        "HealthCheckType": "EC2",
+        "LaunchConfigurationName": {
+          "Ref": "LaunchConfigForAppServer"
+        },
+        "LoadBalancerNames": [
+          { "Ref" : "ElasticLoadBalancerForAppServer" }
+         ],
+        "MaxSize": {
+          "Ref": "MaxSize"
+        },
+        "MinSize": "2",
+        "VPCZoneIdentifier": [
+          { "Ref" : "PrivateSubnet1A" },
+           { "Ref" : "PrivateSubnet2A" }
+        ]
+      }
+    },
+    "LaunchConfigForAppServer": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "AssociatePublicIpAddress": "true",
+        "InstanceMonitoring": "true",
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "ImageId": {
+          "Fn::FindInMap": [
+            "AWSRegion2AMI",
+            {
+              "Ref": "AWS::Region"
+            },
+            "AMI"
+          ]
+        },
+        "SecurityGroups": [
+          {
+            "Ref": "SecurityGroups"
+          }
+        ],
+        "IamInstanceProfile": {
+          "Ref": "RootInstanceProfile"
+        },
+        "InstanceType": {
+          "Ref": "InstanceType1"
+        },
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -xe\n",
+                "yum install -y aws-cfn-bootstrap\n",
+                "# Install the files and packages from the metadata\n",
+                "/opt/aws/bin/cfn-init -v ",
+                "         --stack ",
+                {
+                  "Ref": "AWS::StackName"
+                },
+                "         --resource LaunchConfigForAppServer ",
+                "         --configsets Install ",
+                "    --region ",
+                {
+                  "Ref": "AWS::Region"
+                },
+                " || error_exit 'Failed to run cfn-init'\n",
+                "sudo su - \n",
+                "cd /home/ec2-user \n",
+                "chmod 777 deployScripts\n",
+                "/home/ec2-user/deployScripts \n"
+              ]
+            ]
+          }
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Init": {
+          "configSets": {
+            "Install": [
+              "Install"
+            ]
+          },
+          "Install": {
+            "sources": {
+              "/usr/local": "http://awsu-amm.s3.amazonaws.com/apache-maven-3.0.4-bin.tar.gz"
+            },
+            "packages": {
+              "yum": {
+                "git": [],
+                "java-1.8.0-openjdk*": [],
+                "tomcat8": []
+              }
+            },
+            "files": {
+              "/home/ec2-user/deployScripts": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "#!/bin/bash -xe\n",
+                      "date > /home/ec2-user/logfile \n",
+                      "# Add Tomcat user to sudoers and disable tty \n",
+                      "echo \"tomcat ALL=(ALL) NOPASSWD:ALL\" >> /etc/sudoers\n",
+                      "echo \"Defaults:%tomcat !requiretty\" >> /etc/sudoers\n",
+                      "echo \"Defaults:tomcat !requiretty\" >> /etc/sudoers\n",
+                      "MemInfo=",
+                      "$(cat /proc/meminfo | grep 'MemTotal:')",
+                      "\n",
+                      "O1=",
+                      "$(expr length ",
+                      "\"$(echo $MemInfo)\")",
+                      "\n",
+                      "O2=",
+                      "$(expr $O1 - 13)",
+                      "\n",
+                      "O3=",
+                      "$(expr substr ",
+                      "\"$(echo $MemInfo)\" 11 \"$(echo $O2)\")",
+                      "\n",
+                      "O4=",
+                      "$(expr $O3 / 2)",
+                      "\n",
+                      "O5=",
+                      "$(expr $O3 / 4)",
+                      "\n",
+                      "O6=",
+                      "$(expr $O4 / 1000)",
+                      "\n",
+                      "O7=",
+                      "$(expr $O5 / 1000)",
+                      "\n",
+                      "O6+=m\n",
+                      "O7+=m\n",
+                      "# Set JVM settings\n",
+                      "echo \"JAVA_OPTS='${JAVA_OPTS} -Xms$O6 -Xmx$O6 -XX:PermSize=$O7 -XX:MaxPermSize=$O6'\" >> /etc/tomcat8/tomcat8.conf\n",
+                      "# Tomcat Setup\n",
+                      "chown -R tomcat:tomcat /usr/share/tomcat8/ \n",
+                      "chkconfig tomcat8 on\n",
+                      "chkconfig --level 345 tomcat8 on\n",
+                      "git clone -b ",
+                      {
+                        "Ref": "BranchName"
+                      },
+                      " https://",
+                      {
+                        "Ref": "Username"
+                      },
+                      ":",
+                      {
+                        "Ref": "Password"
+                      },
+                      "@github.com/rgowerneni/email-service >> /home/ec2-user/logfile \n",
+                      "cd /home/ec2-user/email-service \n",
+                      "/usr/sbin/alternatives --set java /usr/lib/jvm/jre-1.8.0-openjdk.x86_64/bin/java \n",
+                      "/usr/local/apache-maven-3.0.4/bin/mvn clean install -DskipTests >> /home/ec2-user/logfile \n",
+                      "cp  /home/ec2-user/email-service/moxiecampaigner-web/target/*.war  /usr/share/tomcat8/webapps \n",
+                      "# Start servers\n",
+                      "service tomcat8 start >> /home/ec2-user/logfile \n",
+                      "rm -rf /home/ec2-user/email-service\n",
+                      "date >> /home/ec2-user/logfile \n"
+                    ]
+                  ]
+                },
+                "mode": "000777",
+                "owner": "root",
+                "group": "root"
+              },
+              "/usr/share/tomcat8/lib/aws.properties": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "aws.s3.bucket.endpoint=s3-external-1.amazonaws.com\n",
+                      "s3bucketname=", {"Fn::If": ["BucketExistsTrue", {"Ref":"S3BucketName"},{"Fn::If" :["BucketNameEmpty",{"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] },"\n",
+                      "email.master.queue=",
+                      {
+                        "Ref": "queue"
+                      },
+                      "\n",
+                      "mail.id=moxieitdeveloper8@gmail.com\n",
+                      "mail.password=moxieit123\n",
+                      "host.name=",
+                      {
+                        "Fn::GetAtt": [
+                          "ElasticLoadBalancerForEmailServer",
+                          "DNSName"
+                        ]
+                      },
+                      "\n",
+                      "mail.smtp.port=25\n",
+                      "SECRET_KEY=MoxieitIncCampaignerApplication\n",
+					  "region=",{
+                  "Ref": "AWS::Region"
+                },"\n"
+                    ]
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "AutoScalingGroupForEmailServer": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties": {
+        "DesiredCapacity": {
+          "Ref": "DesiredCapacity1"
+        },
+        "HealthCheckGracePeriod": "30",
+        "HealthCheckType": "EC2",
+        "LaunchConfigurationName": {
+          "Ref": "LaunchConfigForEmailServer"
+        },
+        "LoadBalancerNames": [
+           { "Ref" : "ElasticLoadBalancerForEmailServer" }
+        ],
+        "MaxSize": {
+          "Ref": "MaxSize1"
+        },
+        "MinSize": "2",
+        "VPCZoneIdentifier": [
+           { "Ref" : "PrivateSubnet1A" },
+           { "Ref" : "PrivateSubnet2A" }
+        ]
+      }
+    },
+    "LaunchConfigForEmailServer": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "AssociatePublicIpAddress": "true",
+        "InstanceMonitoring": "true",
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "ImageId": {
+          "Fn::FindInMap": [
+            "AWSRegion2AMI",
+            {
+              "Ref": "AWS::Region"
+            },
+            "AMI"
+          ]
+        },
+        "SecurityGroups": [
+          {
+            "Ref": "SecurityGroups"
+          }
+        ],
+        "IamInstanceProfile": {
+          "Ref": "RootInstanceProfile"
+        },
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -xe\n",
+                "yum install -y aws-cfn-bootstrap\n",
+                "# Install the files and packages from the metadata\n",
+                "/opt/aws/bin/cfn-init -v ",
+                "         --stack ",
+                {
+                  "Ref": "AWS::StackName"
+                },
+                "         --resource LaunchConfigForEmailServer ",
+                "         --configsets Install ",
+                "    --region ",
+                {
+                  "Ref": "AWS::Region"
+                },
+                " || error_exit 'Failed to run cfn-init'\n",
+                "echo \"This is message body \" | mail -s \"This is Subject\" -r no-reply@mavenstaffing.com ",
+                {
+                  "Ref": "EmailAddress"
+                },
+                "\n",
+                "sudo su - \n",
+                "cd /home/ec2-user \n",
+				"chmod 777 deployScriptsforApp\n",
+				"/home/ec2-user/deployScriptsforApp \n"
+              ]
+            ]
+          }
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Init": {
+          "configSets": {
+            "Install": [
+			  "Install",
+              "install_postfix",
+              "setup_and_run_postfix"
+            ]
+          },
+		   "Install": {
+            "sources": {
+              "/usr/local": "http://awsu-amm.s3.amazonaws.com/apache-maven-3.0.4-bin.tar.gz"
+            },
+            "packages": {
+              "yum": {
+                "git": [],
+                "java-1.8.0-openjdk*": [],
+                "tomcat8": []
+              }
+            },
+            "files": {
+              "/home/ec2-user/deployScriptsforApp": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "#!/bin/bash -xe\n",
+                      "date > /home/ec2-user/logfile \n",
+                      "# Add Tomcat user to sudoers and disable tty \n",
+                      "echo \"tomcat ALL=(ALL) NOPASSWD:ALL\" >> /etc/sudoers\n",
+                      "echo \"Defaults:%tomcat !requiretty\" >> /etc/sudoers\n",
+                      "echo \"Defaults:tomcat !requiretty\" >> /etc/sudoers\n",
+                      "MemInfo=",
+                      "$(cat /proc/meminfo | grep 'MemTotal:')",
+                      "\n",
+                      "O1=",
+                      "$(expr length ",
+                      "\"$(echo $MemInfo)\")",
+                      "\n",
+                      "O2=",
+                      "$(expr $O1 - 13)",
+                      "\n",
+                      "O3=",
+                      "$(expr substr ",
+                      "\"$(echo $MemInfo)\" 11 \"$(echo $O2)\")",
+                      "\n",
+                      "O4=",
+                      "$(expr $O3 / 4)",
+                      "\n",
+                      "O5=",
+                      "$(expr $O3 / 8)",
+                      "\n",
+                      "O6=",
+                      "$(expr $O4 / 1000)",
+                      "\n",
+                      "O7=",
+                      "$(expr $O5 / 1000)",
+                      "\n",
+                      "O6+=m\n",
+                      "O7+=m\n",
+                      "# Set JVM settings\n",
+                      "echo \"JAVA_OPTS='${JAVA_OPTS} -Xms$O6 -Xmx$O6 -XX:PermSize=$O7 -XX:MaxPermSize=$O6'\" >> /etc/tomcat8/tomcat8.conf\n",
+                      "# Tomcat Setup\n",
+                      "chown -R tomcat:tomcat /usr/share/tomcat8/ \n",
+                      "chkconfig tomcat8 on\n",
+                      "chkconfig --level 345 tomcat8 on\n",
+                      "git clone -b ",
+                      {
+                        "Ref": "BranchName"
+                      },
+                      " https://",
+                      {
+                        "Ref": "Username"
+                      },
+                      ":",
+                      {
+                        "Ref": "Password"
+                      },
+                      "@github.com/rgowerneni/email-service >> /home/ec2-user/logfile \n",
+                      "cd /home/ec2-user/email-service \n",
+                      "/usr/sbin/alternatives --set java /usr/lib/jvm/jre-1.8.0-openjdk.x86_64/bin/java \n",
+                      "/usr/local/apache-maven-3.0.4/bin/mvn clean install -DskipTests >> /home/ec2-user/logfile \n",
+                      "cp  /home/ec2-user/email-service/email-consumer/target/*.war  /usr/share/tomcat8/webapps \n",
+                      "# Start servers\n",
+                      "service tomcat8 start >> /home/ec2-user/logfile \n",
+                      "rm -rf /home/ec2-user/email-service\n",
+                      "date >> /home/ec2-user/logfile \n"
+                    ]
+                  ]
+                },
+                "mode": "000777",
+                "owner": "root",
+                "group": "root"
+              },
+              "/usr/share/tomcat8/lib/aws.properties": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "aws.s3.bucket.endpoint=s3-external-1.amazonaws.com\n",
+                      "s3bucketname=", {"Fn::If": ["BucketExistsTrue", {"Ref":"S3BucketName"},{"Fn::If" :["BucketNameEmpty",{"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] },"\n",
+                      "email.master.queue=",{ "Ref": "queue"},"\n",
+                      "mail.id=moxieitdeveloper8@gmail.com\n",
+                      "mail.password=moxieit123\n",
+                      "host.name=",
+                      "localhost",
+                      "\n",
+                      "mail.smtp.port=25\n",
+                      "SECRET_KEY=MoxieitIncCampaignerApplication\n",
+					  "region=",{
+                  "Ref": "AWS::Region"
+                },"\n"
+                    ]
+                  ]
+                }
+              }
+            }
+          },
+          "install_postfix": {
+            "packages": {
+              "yum": {
+                "postfix": [
+                  {
+                    "Fn::FindInMap": [
+                      "StackConfig",
+                      "Postfix",
+                      "Version"
+                    ]
+                  }
+                ],
+                "mailx": []
+              }
+            },
+            "services": {
+              "sysvinit": {
+                "sendmail": {
+                  "enabled": "false",
+                  "ensureRunning": "false"
+                }
+              }
+            }
+          },
+          "setup_and_run_postfix": {
+            "files": {
+              "/etc/postfix/main.cf": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "queue_directory = /var/spool/postfix\n",
+                      "command_directory = /usr/sbin\n",
+                      "daemon_directory = /usr/libexec/postfix\n",
+                      "data_directory = /var/lib/postfix\n",
+                      "mail_owner = postfix\n",
+                      "myhostname = mail.",
+                      {
+                        "Ref": "DomainName"
+                      },
+                      "\n",
+                      "mydomain = ",
+                      {
+                        "Ref": "DomainName"
+                      },
+                      "\n",
+                      "myorigin = $mydomain\n",
+                      "inet_interfaces = all\n",
+                      "inet_protocols = all\n",
+                      "mydestination = $myhostname, localhost.$mydomain, localhost\n",
+                      "unknown_local_recipient_reject_code = 550\n",
+                      "mynetworks = 20.0.0.0/16 ,127.0.0.0/8\n",
+                      "relay_domains = $mydestination, $mydomain\n",
+                      "alias_maps = hash:/etc/aliases\n",
+                      "alias_database = hash:/etc/aliases\n",
+                      "smtpd_banner = $myhostname ESMTP unknown\n",
+                      "debug_peer_level = 2\n",
+                      "debugger_command =\n",
+                      "\t PATH=/bin:/usr/bin:/usr/local/bin:/usr/X11R6/bin\n",
+                      "\t ddd $daemon_directory/$process_name $process_id & sleep 5\n",
+                      "sendmail_path = /usr/sbin/sendmail.postfix\n",
+                      "newaliases_path = /usr/bin/newaliases.postfix\n",
+                      "mailq_path = /usr/bin/mailq.postfix\n",
+                      "setgid_group = postdrop\n",
+                      "html_directory = no\n",
+                      "manpage_directory = /usr/share/man\n",
+                      "sample_directory = /usr/share/doc/postfix-",
+                      {
+                        "Fn::FindInMap": [
+                          "StackConfig",
+                          "Postfix",
+                          "Version"
+                        ]
+                      },
+                      "/samples\n",
+                      "readme_directory = /usr/share/doc/postfix-",
+                      {
+                        "Fn::FindInMap": [
+                          "StackConfig",
+                          "Postfix",
+                          "Version"
+                        ]
+                      },
+                      "/README_FILES\n",
+                      "transport_maps = hash:/etc/postfix/transport\n"
+                    ]
+                  ]
+                },
+                "mode": "000644",
+                "owner": "root",
+                "group": "root"
+              }
+            },
+            "commands": {
+              "postmap": {
+                "command": "/usr/sbin/postmap /etc/postfix/transport"
+              }
+            },
+            "services": {
+              "sysvinit": {
+                "postfix": {
+                  "enabled": "true",
+                  "ensureRunning": "true"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+   "ElasticLoadBalancerForEmailServer": {
+      "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+      "Properties": {
+        "Subnets": [
+          {
+            "Ref": "PublicSubnet1"
+          },
+          {
+            "Ref": "PublicSubnet2"
+          }
+        ],
+        "Listeners": [
+          {
+            "LoadBalancerPort": "80",
+            "InstancePort": "8080",
+            "Protocol": "HTTP"
+          }
+        ],
+        "SecurityGroups": [
+          {
+            "Ref": "ELBSecurityGroup"
+          }
+        ],
+        "HealthCheck": {
+          "Target": "HTTP:8080/sqsservice-1.0/rest/testUrl",
+          "HealthyThreshold": "3",
+          "UnhealthyThreshold": "5",
+          "Interval": "30",
+          "Timeout": "5"
+        },
+        "ConnectionDrainingPolicy": {
+          "Enabled": "true",
+          "Timeout": "200"
+        }
+      }
+    },
+    "OutboundRuleEmailServer": {
+      "Type": "AWS::EC2::SecurityGroupEgress",
+      "Properties": {
+        "IpProtocol": "tcp",
+        "FromPort": "80",
+        "ToPort": "80",
+        "DestinationSecurityGroupId": {
+          "Fn::GetAtt": [
+            "SecurityGroups",
+            "GroupId"
+          ]
+        },
+        "GroupId": {
+          "Fn::GetAtt": [
+            "ELBSecurityGroup",
+            "GroupId"
+          ]
+        }
+      }
+    },
+    "InboundRuleEmailServer": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "IpProtocol": "tcp",
+        "FromPort": "80",
+        "ToPort": "80",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "ELBSecurityGroup",
+            "GroupId"
+          ]
+        },
+        "GroupId": {
+          "Fn::GetAtt": [
+            "SecurityGroups",
+            "GroupId"
+          ]
+        }
+      }
+    }
+  },
+   "Mappings": {
+    "AWSRegion2AMI": {
+      "us-east-1": {
+        "AMI": "ami-b73b63a0"
+      },
+      "us-east-2": {
+        "AMI": "ami-58277d3d"
+      },
+      "us-west-2": {
+        "AMI": "ami-5ec1673e"
+      },
+      "us-west-1": {
+        "AMI": "ami-23e8a343"
+      },
+      "eu-west-1": {
+        "AMI": "ami-9398d3e0"
+      },
+      "eu-central-1": {
+        "AMI": "ami-f9619996"
+      },
+      "ap-southeast-1": {
+        "AMI": "ami-b953f2da"
+      },
+      "ap-northeast-2": {
+        "AMI": "ami-983ce8f6"
+      },
+      "ap-northeast-1": {
+        "AMI": "ami-0c11b26d"
+      },
+      "ap-southeast-2": {
+        "AMI": "ami-db704cb8"
+      },
+      "ap-south-1": {
+        "AMI": "ami-34b4c05b"
+      },
+      "sa-east-1": {
+        "AMI": "ami-97831ffb"
+      },
+      "ca-central-1": {
+        "AMI": "ami-b48b39d0"
+      },
+      "eu-west-2": {
+        "AMI": "ami-d6cbc1b2"
+      }
+    },
+    "StackConfig": {
+      "Postfix": {
+        "Version": "2.6.6"
+      }
+    }
+  },
+  "Outputs": {
+    "ElasticLoadBalancerForEmailServer": {
+      "Description": "The URL of the website",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "http://",
+            {
+              "Fn::GetAtt": [
+                "ElasticLoadBalancerForEmailServer",
+                "DNSName"
+              ]
+            },
+            "/sqsservice-1.0/rest/testUrl"
+          ]
+        ]
+      }
+    },
+    "ElasticLoadBalancerForAppServer": {
+      "Description": "The URL of the website",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "http://",
+            {
+              "Fn::GetAtt": [
+                "ElasticLoadBalancerForAppServer",
+                "DNSName"
+              ]
+            },
+            "/emailservice-1.0/rest/testUrl"
+          ]
+        ]
+      }
+    }
+  }
+}
