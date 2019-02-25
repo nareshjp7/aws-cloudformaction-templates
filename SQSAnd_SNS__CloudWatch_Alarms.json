@@ -1,0 +1,101 @@
+  {
+  "AWSTemplateFormatVersion" : "2010-09-09",
+ "Description" : "AWS CloudFormation Template SQS_With_CloudWatch_Alarms ",
+ "Parameters" : {
+    "AlarmEMail": {
+      "Description": "EMail address to notify if there are any operational issues",
+      "Type": "String",
+      "AllowedPattern": "([a-zA-Z0-9_\\-\\.]+)@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.)|(([a-zA-Z0-9\\-]+\\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\\]?)",
+      "ConstraintDescription": "must be a valid email address."
+    }
+  },
+ "Resources" : {
+  "MyQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {}
+    },
+    "AlarmTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "Subscription": [
+          {
+            "Endpoint": {
+              "Ref": "AlarmEMail"
+            },
+            "Protocol": "email"
+          }
+        ]
+      }
+    },
+  "QueueDepthAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "Alarm if queue depth grows beyond 1000000 messages",
+        "Namespace": "AWS/SQS",
+        "MetricName": "AlarmSQS",
+        "Dimensions": [
+          {
+            "Name": "QueueName",
+            "Value": {
+              "Fn::GetAtt": [
+                "MyQueue",
+                "QueueName"
+              ]
+            }
+          }
+        ],
+        "Statistic": "Sum",
+        "Period": "60",
+        "EvaluationPeriods": "3",
+        "Threshold": "100000",
+		"ComparisonOperator": "GreaterThanOrEqualToThreshold",
+         "AlarmActions": [
+          {
+            "Ref": "AlarmTopic"
+          }
+        ],
+        "InsufficientDataActions": [
+          {
+            "Ref": "AlarmTopic"
+          }
+
+        ]
+      }
+    },
+	 "SNSAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "Alarm if queue depth grows beyond 1000000 messages",
+        "Namespace": "AWS/SNS",
+        "MetricName": "AlarmSNS",
+        "Dimensions": [
+          {
+            "Name": "QueueName",
+            "Value": {
+              "Fn::GetAtt": [
+                "MyQueue",
+                "QueueName"
+              ]
+            }
+          }
+        ],
+        "Statistic": "Sum",
+        "Period": "60",
+        "EvaluationPeriods": "3",
+        "Threshold":"100000",
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "AlarmActions": [
+		{
+           "Ref": "AlarmTopic"
+		 }
+        ],
+        "InsufficientDataActions": [
+          {
+            "Ref": "AlarmTopic"
+          }
+
+        ]
+      }
+    }
+	}
+	}

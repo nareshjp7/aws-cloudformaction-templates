@@ -1,0 +1,3531 @@
+ {
+  "AWSTemplateFormatVersion": "2010-09-09",
+"Description": "AWS CloudFormation Template for DealMate",
+ "Metadata": {
+    "AWS::CloudFormation::Interface": {
+      "ParameterGroups":[
+	  {
+          "Label": {
+            "default": "Application Server Configuration "
+          },
+          "Parameters": [
+            "KeyName"
+                 
+			
+          ]
+        },
+        {
+          "Label": {
+            "default": "Git Configuration"
+          },
+          "Parameters": [
+            "BranchNameforsigunupapis",
+			"BranchNamefordealsapis",
+            "Username",
+            "Password"		
+			
+          ]
+        },
+	  {
+          "Label": {
+            "default": "DynamoDB Configuration"
+          },
+          "Parameters": [
+            "ReadCapacityUnits",
+			"WriteCapacityUnits"
+          ]
+        },
+		{
+          "Label": {
+            "default": "Lambda Configuration"
+          },
+          "Parameters": [
+		    "UseExistingBucket",
+            "LambdaSourceBucketName",
+			"DealsLambdaFileName",
+			"signupLambdaFileName"
+
+          ]
+        },
+	 {
+          "Label": {
+            "default": "CognitoUserPool Configuration"
+          },
+          "Parameters": [
+            "PoolName",
+			"UnusedAccountValidityDays",
+			"MfaConfiguration",
+			"MinimumLengthForPasswordPolicy",
+			"AutoVerifiedAttributes",
+			"AliasAttributes",
+			"RequiredAttributes",
+			"DeviceOnlyRememberedOnUserPrompt",
+			"AllowAdminCreateUserOnly",
+			"ChallengeRequiredOnNewDevice",			
+			"UserPoolClientName"
+          ]
+        }	
+		],		
+	"ParameterLabels": {
+		"ReadCapacityUnits" :{
+		"default":"ReadCapacityUnits"
+		},
+		"WriteCapacityUnits":{
+		"default":"WriteCapacityUnits"
+		},
+		"PoolName" :{
+		"default":"PoolName"
+		},
+		"UnusedAccountValidityDays":{
+		"default":"UnusedAccountValidityDays"
+		},
+		"MfaConfiguration" :{
+		"default":"MfaConfiguration"
+		},
+		"MinimumLengthForPasswordPolicy":{
+		"default":"MinimumLengthForPasswordPolicy"
+		},
+		"AliasAttributes" :{
+		"default":"AliasAttributes"
+		},
+		"RequiredAttributes" :{
+		"default":"RequiredAttributes"
+		},
+		"AutoVerifiedAttributes" :{
+		"default":"AutoVerifiedAttributes"
+		},
+		"DeviceOnlyRememberedOnUserPrompt":{
+		"default":"DeviceOnlyRememberedOnUserPrompt"
+		},
+		"AllowAdminCreateUserOnly" :{
+		"default":"AllowAdminCreateUserOnly"
+		},
+		"ChallengeRequiredOnNewDevice":{
+		"default":"ChallengeRequiredOnNewDevice"
+		},
+		
+		"UserPoolClientName":{
+		"default":"UserPoolClientName"
+		},
+		"DealsLambdaFileName":{
+		"default":"DealsLambdaFileName"
+		},
+		"signupLambdaFileName":{
+		"default":"signupLambdaFileName"
+		},
+		"LambdaSourceBucketName":{
+		"default":"LambdaSourceBucketName"
+		},
+		"UseExistingBucket":{
+		"default":"UseExistingBucket"
+		},
+		 "BranchNameforsigunupapis": {
+          "default": "BranchNameforsigunupapis"
+        },
+		"BranchNamefordealsapis": {
+          "default": "BranchNamefordealsapis"
+        },
+        "Username": {
+          "default": "Username"
+        },
+        "Password": {
+          "default": "Password"
+        },
+				        
+        
+        "KeyName": {
+          "default": "KeyName"
+        }
+        
+		
+	  }	
+	}
+	},
+"Parameters": {
+
+        "DealsLambdaFileName": {
+            "Description": "Name of the ZIP file with lambda function sources inside S3 bucket",
+            "Default": "DealMateLambdaProject-0.0.1-SNAPSHOT.jar",
+			"Type": "String"
+        },
+		"signupLambdaFileName": {
+            "Description": "Name of the ZIP file with lambda function sources inside S3 bucket",
+            "Default": "DealMateLambdaNodeJs.zip",
+			"Type": "String"
+        },
+        "LambdaSourceBucketName": {
+            "Description": "Name of the bucket where lambda function sources is stored",
+            "Default": "examm",
+			"Type": "String"
+        },
+		"ReadCapacityUnits": {
+      "Description": "Please Enter Provisioned Read throughput",
+      "Type": "Number",
+      "Default": "5",
+      "MinValue": "5",
+      "MaxValue": "10000",
+      "ConstraintDescription": "must be between 5 and 10000"
+    },
+
+    "WriteCapacityUnits": {
+      "Description": "Please Enter Provisioned Write throughput",
+      "Type": "Number",
+      "Default": "10",
+      "MinValue": "5",
+      "MaxValue": "10000",
+      "ConstraintDescription": "must be between 5 and 10000"
+  },
+  "PoolName": {
+			"Type": "String",
+			"Default": "DealMateUserPool",
+			"Description": "Please Enter The Name for the Cognito UserPool"
+		},
+		"UnusedAccountValidityDays": {
+			"Type": "Number",
+			"Default": "7",
+			"Description": "Please Enter The ExpiryPeriod for UnusedAccountValidity in Number of Days"
+		},
+		"MfaConfiguration": {
+			"Type": "String",
+			"Default": "OFF",
+			"AllowedValues": [ "OFF", "OPTIONAL", "ON" ],
+			"Description": "Please Select the State of the MFA( Multi Facture Authentication)."
+		},
+		"MinimumLengthForPasswordPolicy": {
+			"Type": "String",
+				"Default": "8",
+			"Description": "Please Enter The MinimumLength for Password(Must be greater than 6)"
+		},
+		"AutoVerifiedAttributes": {
+			"Type": "CommaDelimitedList",			
+		  "Default": "phone_number,email",
+			"Description": "Please Enter The Name for the Auto Verified Attributes"
+		},
+		"AliasAttributes": {
+			"Type": "CommaDelimitedList",			
+		  "Default": "phone_number,email",
+			"Description": "Please Enter The Name for the Alias Attributes"
+		},
+		"RequiredAttributes": {
+			"Type": "CommaDelimitedList",			
+		  "Default": "phone_number,email",
+			"Description": "Please Enter The Name for the AutoVerified Attributes"
+		},
+		"DeviceOnlyRememberedOnUserPrompt": {
+			"Type": "String",
+			"Default" : "true",
+			"AllowedValues": [ "true",
+          "false" ],
+			"Description": "Please Enter The State of the Device Rememberence On UserPrompt"
+		},
+		"AllowAdminCreateUserOnly": {
+			"Type": "String",
+			"Default" : "false",
+			"AllowedValues": [ "true",
+          "false" ],
+			"Description": "Please Enter The State of the AllowAdminCreateUserOnly"
+		},
+		"ChallengeRequiredOnNewDevice": {
+			"Type": "String",
+			"Default" : "false",
+			"AllowedValues": [ "true",
+          "false" ],
+			"Description": "Please Enter The State of the Challenge Required On New Device"
+		},
+		
+		"UserPoolClientName": {
+			"Type": "String",
+			"Default": "DealMate",
+			"Description": "Please Enter The Name of the UserPool Client"
+		},
+		    
+    "KeyName": {
+      "Description": "Please select the name of an existing EC2 KeyPair to enable SSH access to the instances",
+      "Type": "AWS::EC2::KeyPair::KeyName",
+	  "Default": "seoul"
+    },
+    
+    
+    
+    "BranchNameforsigunupapis": {
+      "Description": "Please Enter the Branchname for GitHub",
+      "Type": "String",
+	  "Default": "master"
+    },
+	"BranchNamefordealsapis": {
+      "Description": "Please Enter the Branchname for GitHub",
+      "Type": "String",
+	  "Default": "master"
+    },
+    "Username": {
+      "Description": "Please Enter the Username for GitHub",
+      "Type": "String",
+      "Default": "kkommineni123",
+      "NoEcho": "true"
+    },
+    "Password": {
+      "Description": "Please Enter the Password for GitHub, If your password contains @ please replace the value with %40 ",
+      "Type": "String",
+      "Default": "Kumarbabu123%40",
+      "NoEcho": "true"
+    },	
+	
+	"UseExistingBucket": {
+	"Description":"Please select any one,(True/False),If you want to create new bucket choose FALSE",
+      "Type": "String",
+      "Default": "true",
+      "AllowedValues": [
+        "true",
+        "false"
+      ]
+    }
+    },
+	"Conditions": {
+  "BucketExists": {
+      "Fn::Equals": [
+        {
+          "Ref": "UseExistingBucket"
+        },
+        "false"
+      ]
+    },
+	"BucketExistsTrue": {
+      "Fn::Equals": [
+        {
+          "Ref": "UseExistingBucket"
+        },
+        "true"
+      ]
+    },
+    "BucketNameEmpty": {
+      "Fn::Equals": [
+        {
+          "Ref": "LambdaSourceBucketName"
+        },
+        ""
+      ]
+    },
+    "BucketExistsAndBucketNameEmpty": {
+      "Fn::And": [
+        {
+          "Condition": "BucketExists"
+        },
+        {
+          "Condition": "BucketNameEmpty"
+        }
+      ]
+    },
+    "BucketExistsAndBucketNameNotEmpty": {
+      "Fn::And": [
+        {
+          "Condition": "BucketExists"
+        },
+        {
+          "Fn::Not": [
+            {
+              "Condition": "BucketNameEmpty"
+            }
+          ]
+        }
+      ]
+    }
+  },
+ "Resources": {
+     "MoxieitFolderWithUserBucketName": {
+      "Type": "AWS::S3::Bucket",
+      "Condition": "BucketExistsAndBucketNameNotEmpty",
+      "Properties": {
+        "BucketName": {
+          "Ref": "LambdaSourceBucketName"
+        }
+      }
+    },
+	"MoxieitFolderWithOutUserBucketName": {
+      "Type": "AWS::S3::Bucket",
+      "Condition": "BucketExistsAndBucketNameEmpty"
+    },
+	"TableOfDealShares": {
+
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "DealId", "AttributeType": "S" },
+          { "AttributeName": "ShareId", "AttributeType": "S" }      
+        ],
+        "KeySchema": [
+          { "AttributeName": "DealId", "KeyType": "HASH" },
+          { "AttributeName": "ShareId", "KeyType": "RANGE" }          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deal_Shares"
+        
+     }
+	 },
+
+"TableOfDealMateCIbuilds": {
+"DependsOn": [ "TableOfDealShares" ],
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "project", "AttributeType": "S" },
+          { "AttributeName": "buildNum", "AttributeType": "S" }
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "project", "KeyType": "HASH" },
+		  { "AttributeName": "buildNum", "KeyType": "RANGE" }
+          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "DealMate-CI-builds"
+        
+      }
+	  },
+
+"TableOfDealMateCIConfig": {
+"DependsOn": ["TableOfDealMateCIbuilds" ],
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "project", "AttributeType": "S" }
+              ],
+        "KeySchema": [
+          { "AttributeName": "project", "KeyType": "HASH" }
+          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "DealMate-CI-config"
+        
+      }
+	  },
+
+"TableOfDeals": {
+"DependsOn": [ "TableOfDealMateCIConfig" ],
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "DealId", "AttributeType": "S" }         
+        ],
+        "KeySchema": [
+          { "AttributeName": "DealId", "KeyType": "HASH" }
+          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals"
+      }
+	  },
+
+"TableOfDealsComments": {
+
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "DealId", "AttributeType": "S" },
+          {"AttributeName": "CommentId", "AttributeType": "S" }
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "DealId", "KeyType": "HASH" },
+		  { "AttributeName": "CommentId", "KeyType": "RANGE" }
+          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals_Comments"
+        
+      }
+},
+
+"TableOfDealsDislikes": {
+"DependsOn": ["TableOfDealsComments" ],
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "DealId", "AttributeType": "S" },
+          {"AttributeName": "DislikeId", "AttributeType": "S" }
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "DealId", "KeyType": "HASH" },
+		  { "AttributeName": "DislikeId", "KeyType": "RANGE" }
+          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals_Dislikes"
+        
+      }
+},
+
+"TableOfDealslikes": {
+"DependsOn": [ "TableOfDealsDislikes" ],
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "DealId", "AttributeType": "S" },
+          {"AttributeName": "LikeId", "AttributeType": "S" }
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "DealId", "KeyType": "HASH" },
+		  { "AttributeName": "LikeId", "KeyType": "RANGE" }
+          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals_Likes"
+        
+   }
+},
+
+"TableOfDealsLoc": {
+"DependsOn": [ "TableOfDealslikes" ],
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "hashKey", "AttributeType": "S" },
+          {"AttributeName": "rangeKey", "AttributeType": "S" }
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "hashKey", "KeyType": "HASH" },
+          { "AttributeName": "rangeKey", "KeyType": "RANGE" }
+          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals_Loc"
+        
+   }
+},
+"TableOfDealsLocation": {
+"DependsOn": [ "TableOfDealsLoc" ],
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "hashKey", "AttributeType": "S" },
+          {"AttributeName": "rangeKey", "AttributeType":"S"}
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "hashKey", "KeyType": "HASH" },
+          { "AttributeName": "rangeKey", "KeyType": "RANGE" }
+          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals_Location"
+        
+   }
+},
+
+"TableOfDealsPrivacy": {
+"DependsOn": [ "TableOfDealsLocation" ],
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "DealId", "AttributeType": "S" }
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "DealId", "KeyType": "HASH" }          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals_Privacy"
+        
+   }
+},
+
+"TableOfDealsReminders": {
+"DependsOn": [ "TableOfDealsLocation" ],
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "DealId", "AttributeType": "S" },
+          { "AttributeName": "ReminderId", "AttributeType": "S" }
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "DealId", "KeyType": "HASH" },
+			{ "AttributeName": "ReminderId", "KeyType": "RANGE" }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals_Reminders"
+        
+   }
+},
+
+"TableOfDealsTags": {
+"DependsOn":[ "TableOfDealsReminders" ],
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "DealId", "AttributeType": "S" }       
+        ],
+        "KeySchema": [
+          { "AttributeName": "DealId", "KeyType": "HASH" }          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals_Tags"
+        
+   }
+},
+
+"TableOfDealsUsed": {
+
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "DealId", "AttributeType": "S" } ,
+          { "AttributeName": "UserId", "AttributeType": "S" }      
+        ],
+        "KeySchema": [
+          { "AttributeName": "DealId", "KeyType": "HASH" },
+			{ "AttributeName": "UserId", "KeyType": "RANGE" }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals_Used"
+        
+   }
+},
+
+"TableOfDealsViews": {
+
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "DealId", "AttributeType": "S" },
+          { "AttributeName": "ViewsId", "AttributeType": "S" }
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "DealId", "KeyType": "HASH" },
+		  { "AttributeName": "ViewsId", "KeyType": "RANGE" }          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals_Views"
+        
+   }
+},
+ "TableOfUsers": {
+
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "UserId", "AttributeType": "S" },
+          { "AttributeName": "temp", "AttributeType": "S" }
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "UserId", "KeyType": "HASH" },
+          
+		  { "AttributeName": "temp", "KeyType": "RANGE" }
+		  
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+		"TableName" : "Users"
+	}
+},	
+
+ "TableOfUsersFriends": {
+
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "UserId", "AttributeType": "S" }          
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "UserId", "KeyType": "HASH" }   
+		 
+		  
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+		"TableName" : "Users_Friends"
+	}
+},	
+"TableOfUsersTags": {
+
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "UserId", "AttributeType": "S" }         
+		  
+        ],
+        "KeySchema": [
+          { "AttributeName": "UserId", "KeyType": "HASH" }   
+		 
+		  
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+		"TableName" : "Users_Tags"       
+      }
+    },
+ 	 "RootRole": {
+         "Type": "AWS::IAM::Role",
+         "Properties": {
+            "AssumeRolePolicyDocument": {
+               "Version" : "2012-10-17",
+               "Statement": [ {
+                  "Effect": "Allow",
+                  "Principal": {
+                     "Service": [ "ec2.amazonaws.com", "cognito-idp.amazonaws.com", "lambda.amazonaws.com" ]
+                  },
+                  "Action": [ "sts:AssumeRole" ]
+				  
+               } ]
+            },
+            "Path": "/",
+        "Policies": [
+          
+		  		{
+            "PolicyName": "logsPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [                
+				{
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "arn:aws:logs:*:*:*"
+                }   
+          
+        ]
+      }
+    },
+	{
+            "PolicyName": "snsrole",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [                
+				{
+            "Effect": "Allow",
+            "Action": [
+                "sns:publish"
+            ],
+            "Resource": [
+                "*"
+            ]
+        }]}},
+	          {
+            "PolicyName": "DynamoDBPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfDealMateCIbuilds"
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfDealMateCIConfig"
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfDeals"
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfDealsComments"
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfDealsDislikes"
+                        }
+                      ]
+                    ]
+                  }
+                },
+				 {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfDealslikes"
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfDealsLoc"
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfDealsLocation"
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfDealsPrivacy"
+                        }
+                      ]
+                      ]
+                    }
+                  
+                },
+                {
+				"Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfDealsReminders"
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfDealsTags"
+                        }
+                      ]
+                    ]
+                  }
+                },
+				 {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfDealsUsed"
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfDealsViews"
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfUsers"
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfUsersFriends"
+                        }
+                      ]
+                    ]
+                  }
+                },
+				{
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:dynamodb:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":table/",
+                        {
+                          "Ref": "TableOfUsersTags"
+                        }
+                      ]
+                    ]
+                  }
+                }
+        ]
+      }
+    },
+					{
+            "PolicyName": "CognitoPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "cognito-idp:CreateUserPool",
+					"cognito-idp:ListUserPools",
+					"cognito-idp:DeleteUserPool",
+					"cognito-idp:UpdateUserPool",
+					"cognito-idp:SetUserPoolRoles",
+					"cognito-idp:ListUserPoolClients",
+					"cognito-idp:CreateUserPoolClient",
+					"cognito-idp:DeleteUserPoolClient",
+					"cognito-idp:UpdateUserPoolClient",					
+					"iam:PassRole"
+                  ],
+                  "Resource": "*"
+                }
+                
+              ]
+            }
+          },
+		         
+          {
+            "PolicyName": "S3BucketPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+      "Effect": "Allow",
+      "Action": "s3:ListAllMyBuckets",
+      "Resource": "arn:aws:s3:::*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetBucketLocation"
+      ],
+      "Resource": {
+        "Fn::Join": [
+                                  "",
+                                  [
+                                     "arn:aws:s3:::",
+								   {"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{"Fn::If" :["BucketNameEmpty",{"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] }
+									]]
+    }},
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": { "Fn::Join": [
+                                  "",
+                                  [
+                                     "arn:aws:s3:::",
+								    {"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] },
+									"/","*" ]]
+
+    }}]}}
+          
+        ]
+			}
+			},
+
+             
+      "RootInstanceProfile": {
+         "Type": "AWS::IAM::InstanceProfile",
+         "Properties": {
+            "Path": "/",
+            "Roles": [ {
+               "Ref": "RootRole"
+            } ]
+         }
+      }, 
+	  
+
+    "AppServer": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+			    
+        
+        "IamInstanceProfile": {
+          "Ref": "RootInstanceProfile"
+        },
+        
+        "InstanceType": "t2.micro",
+        "ImageId": {
+          "Fn::FindInMap": [
+            "AWSRegion2AMI",
+            {
+              "Ref": "AWS::Region"
+            },
+            "AMI"
+          ]
+        },
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -xe\n",
+                "yum install -y aws-cfn-bootstrap\n",
+                "# Install the files and packages from the metadata\n",
+                "/opt/aws/bin/cfn-init -v ",
+                "         --stack ",
+                {
+                  "Ref": "AWS::StackName"
+                },
+                "         --resource AppServer ",
+                "         --configsets Install ",
+                "    --region ",
+                {
+                  "Ref": "AWS::Region"
+                },
+                " || error_exit 'Failed to run cfn-init'\n",
+                "sudo su - \n",
+                "cd /home/ec2-user \n",
+                "chmod 777 deployScripts\n",
+                "/home/ec2-user/deployScripts \n"
+              ]
+            ]
+          }
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "AppServer"
+          }
+        ]
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Init": {
+          "configSets": {
+            "Install": [
+              "Install"
+            ]
+          },
+          "Install": {
+            "sources": {
+              "/usr/local": "http://awsu-amm.s3.amazonaws.com/apache-maven-3.0.4-bin.tar.gz"
+            },
+            "packages": {
+              "yum": {
+                "git": [],
+                "java-1.8.0-openjdk*": []
+              }
+            },
+            "files": {
+              "/home/ec2-user/deployScripts": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "#!/bin/bash -xe\n",
+                      "date > /home/ec2-user/logfile \n",
+                      "git clone -b ",
+                      {
+                        "Ref": "BranchNamefordealsapis"
+                      },
+                      " https://",
+                      {
+                        "Ref": "Username"
+                      },
+                      ":",
+                      {
+                        "Ref": "Password"
+                      },
+                      "@github.com/rgowerneni/DealMateLambda.git >> /home/ec2-user/logfile \n",
+                      "cd /home/ec2-user/DealMateLambda \n",
+                      "/usr/sbin/alternatives --set java /usr/lib/jvm/jre-1.8.0-openjdk.x86_64/bin/java >> /home/ec2-user/logfile \n",
+                      "/usr/local/apache-maven-3.0.4/bin/mvn clean install -DskipTests >> /home/ec2-user/logfile \n",
+                      "wget http://stedolan.github.io/jq/download/linux64/jq >> /home/ec2-user/logfile \n",
+					  "chmod +x ./jq >> /home/ec2-user/logfile \n",
+					  "sudo cp jq /usr/bin >> /home/ec2-user/logfile \n",					  
+						"awsregion=$( aws s3api get-bucket-location --bucket ",
+						{"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] },
+						" |  jq '.LocationConstraint') >> /home/ec2-user/logfile \n",
+					  "O1=$(expr length $(echo $awsregion)) >> /home/ec2-user/logfile \n",
+					  "O3=$(expr $O1 - 2) >> /home/ec2-user/logfile \n",
+					  "O2=$(expr substr $(echo $awsregion) 2 $(echo $O3)) >> /home/ec2-user/logfile \n",					  
+                      "aws s3 cp  /home/ec2-user/DealMateLambda/target/DealMateLambdaProject-*.jar ",
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "s3://",
+                            {"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] }
+                          ]
+                        ]
+                      },
+					  
+                      " --region $O2  >> /home/ec2-user/logfile \n",
+					  "sudo su - >> /home/ec2-user/logfile \n",
+                      "cd /home/ec2-user \n",
+                      "curl --silent --location https://rpm.nodesource.com/setup_7.x | bash - >> /home/ec2-user/logfile \n",                      
+                      "yum -y install nodejs >> /home/ec2-user/logfile \n",                      
+                      "git clone -b ",
+                      {
+                        "Ref": "BranchNameforsigunupapis"
+                      },
+                      " https://",
+                      {
+                        "Ref": "Username"
+                      },
+                      ":",
+                      {
+                        "Ref": "Password"
+                      },
+					    "@github.com/rgowerneni/DealMateLambdaNodeJs >> /home/ec2-user/logfile \n",
+					   "#git clone https://jvenkatanagaraju:venkat123@github.com/rgowerneni/DealMateLambdaNodeJs \n",					   
+                      "cd /home/ec2-user/DealMateLambdaNodeJs >> /home/ec2-user/logfile \n",
+					  "npm install >> /home/ec2-user/logfile  \n",
+					  "npm install amazon-cognito-identity-js-node >> /home/ec2-user/logfile  \n",					  						
+						"sed -i 's/us-east-1_NXmCzBkVq/",{ "Fn::GetAtt" : [ "CognitoUserPool", "Id" ] },"/g' index.js >> /home/ec2-user/logfile \n",
+						"sed -i 's/us-east-1/",{ "Ref": "AWS::Region" },"/g' index.js >> /home/ec2-user/logfile \n",
+					 "sed -i 's/1vkde054jd2so772uc8d9ktd7a/",{ "Fn::GetAtt" : [ "CognitoUserPoolClient", "ClientId" ] },"/g' index.js >> /home/ec2-user/logfile \n",
+                     "zip DealMateLambdaNodeJs.zip index.js LICENSE.txt NOTICE.txt package.json README.md sample >> /home/ec2-user/logfile \n",
+					  "zip -r DealMateLambdaNodeJs.zip bower_components  >> /home/ec2-user/logfile \n",	
+                       "zip -r DealMateLambdaNodeJs.zip node_modules  >> /home/ec2-user/logfile \n",											
+					   					  
+                      "aws s3 cp  /home/ec2-user/DealMateLambdaNodeJs/DealMateLambdaNodeJs.zip ",
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "s3://",
+                            {"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] }
+                          ]
+                        ]
+                      },					  
+                      " --region $O2  >> /home/ec2-user/logfile \n",					  
+                      "date >> /home/ec2-user/logfile \n",
+					  "# Send signal to WaitHandle that the setup is completed\n",
+				"/opt/aws/bin/cfn-signal", " -e 0", " '", { "Ref" : "WaitHandle" }, "'","\n",
+					  "halt >> /home/ec2-user/logfile \n"
+					  
+                    ]
+                  ]
+                },
+                "mode": "000777",
+                "owner": "root",
+                "group": "root"
+              }
+            }
+          }
+        }
+      }
+    },
+	"WaitHandle" : {
+  "Type" : "AWS::CloudFormation::WaitConditionHandle"
+},
+
+"WaitCondition" : {
+  "Type" : "AWS::CloudFormation::WaitCondition",
+  "DependsOn" : "AppServer",
+  "Properties" : {
+    "Handle" : { "Ref" : "WaitHandle" },
+    "Timeout" : "300"
+  }
+},
+	"Lambdanodejs": {
+	"DependsOn" : "WaitCondition",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] },
+                    "S3Key": {
+                        "Ref": "signupLambdaFileName"
+                    }
+                },
+                "Handler": "index.handler",
+                "MemorySize": 128,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "RootRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "nodejs4.3",
+                "Timeout": 30
+            },
+            "Type": "AWS::Lambda::Function"
+        },
+	"signupResource": {
+	"DependsOn" : "WaitCondition",
+            "Properties": {
+                "ParentId": {
+                    "Fn::GetAtt": [
+                        "Dealmate",
+                        "RootResourceId"
+                    ]
+                },
+                "PathPart": "signup",
+                "RestApiId": {
+                    "Ref": "Dealmate"
+                }
+            },
+            "Type": "AWS::ApiGateway::Resource"
+        },
+		        "signupResourceMethodpost": {
+            "Properties": {
+                "ApiKeyRequired": false,
+                "AuthorizationType": "NONE",
+                "HttpMethod": "POST",
+                "Integration": {
+                    "IntegrationHttpMethod": "POST",
+					"PassthroughBehavior" : "WHEN_NO_MATCH",
+                    "IntegrationResponses": [	
+                        {
+                            
+                            "StatusCode": "200"
+                        }
+                        
+                    ],
+                    
+                    "Type": "AWS",
+                    "Uri": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "arn:aws:apigateway:",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                ":lambda:path/2015-03-31/functions/",
+                                {
+                                    "Fn::GetAtt": [
+                                        "Lambdanodejs",
+                                        "Arn"
+                                    ]
+                                },
+                                "/invocations"
+                            ]
+                        ]
+                    }
+                },
+                "MethodResponses": [{
+      "ResponseModels": {
+        "application/json": "Empty"
+      },
+      "ResponseParameters": {
+        "method.response.header.Authorization": true
+      },
+      "StatusCode": 200
+    }],
+                "RequestParameters": {
+                    "method.request.path.param1": true
+                    
+                },
+                "ResourceId": {
+                    "Ref": "signupResource"
+                },
+                "RestApiId": {
+                    "Ref": "Dealmate"
+                }
+            },
+            "Type": "AWS::ApiGateway::Method"
+        },
+ "loginResource": {
+ "DependsOn" : "WaitCondition",
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "login"
+      }
+    },
+         "loginResourceMethodPost": {
+            "Properties": {
+                "ApiKeyRequired": false,
+                "AuthorizationType": "NONE",
+                "HttpMethod": "POST",
+                "Integration": {
+                    "IntegrationHttpMethod": "POST",
+					"PassthroughBehavior" : "WHEN_NO_MATCH",
+                    "IntegrationResponses": [	
+                        {
+                            
+                            "StatusCode": "200"
+                        }
+                        
+                    ],
+                    
+                    "Type": "AWS",
+                    "Uri": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "arn:aws:apigateway:",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                ":lambda:path/2015-03-31/functions/",
+                                {
+                                    "Fn::GetAtt": [
+                                        "Lambdanodejs",
+                                        "Arn"
+                                    ]
+                                },
+                                "/invocations"
+                            ]
+                        ]
+                    }
+                },
+                "MethodResponses": [{
+      "ResponseModels": {
+        "application/json": "Empty"
+      },
+      "ResponseParameters": {
+        "method.response.header.Authorization": true
+      },
+      "StatusCode": 200
+    }],
+                "RequestParameters": {
+                    "method.request.path.param1": true
+                    
+                },
+                "ResourceId": {
+                    "Ref": "loginResource"
+                },
+                "RestApiId": {
+                    "Ref": "Dealmate"
+                }
+            },
+            "Type": "AWS::ApiGateway::Method"
+        },
+		"verifyResource": {
+		"DependsOn" : "WaitCondition",
+            "Properties": {
+                "ParentId": {
+                    "Fn::GetAtt": [
+                        "Dealmate",
+                        "RootResourceId"
+                    ]
+                },
+                "PathPart": "verify",
+                "RestApiId": {
+                    "Ref": "Dealmate"
+                }
+            },
+            "Type": "AWS::ApiGateway::Resource"
+        },
+		         "verifyResourceMethodPost": {
+            "Properties": {
+                "ApiKeyRequired": false,
+                "AuthorizationType": "NONE",
+                "HttpMethod": "POST",
+                "Integration": {
+                    "IntegrationHttpMethod": "POST",
+					"PassthroughBehavior" : "WHEN_NO_MATCH",
+                    "IntegrationResponses": [	
+                        {
+                            
+                            "StatusCode": "200"
+                        }
+                        
+                    ],
+                    
+                    "Type": "AWS",
+                    "Uri": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "arn:aws:apigateway:",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                ":lambda:path/2015-03-31/functions/",
+                                {
+                                    "Fn::GetAtt": [
+                                        "Lambdanodejs",
+                                        "Arn"
+                                    ]
+                                },
+                                "/invocations"
+                            ]
+                        ]
+                    }
+                },
+                "MethodResponses": [{
+      "ResponseModels": {
+        "application/json": "Empty"
+      },
+      "ResponseParameters": {
+        "method.response.header.Authorization": true
+      },
+      "StatusCode": 200
+    }],
+                "RequestParameters": {
+                    "method.request.path.param1": true
+                    
+                },
+                "ResourceId": {
+                    "Ref": "verifyResource"
+                },
+                "RestApiId": {
+                    "Ref": "Dealmate"
+                }
+            },
+            "Type": "AWS::ApiGateway::Method"
+        },
+"APILambdaPermissionsignup": {
+"DependsOn" : "WaitCondition",
+            "Properties": {
+                "Action": "lambda:InvokeFunction",
+                "FunctionName": {
+                    "Ref": "Lambdanodejs"
+                },
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "arn:aws:execute-api:",
+                            {
+                                "Ref": "AWS::Region"
+                            },
+                            ":",
+                            {
+                                "Ref": "AWS::AccountId"
+                            },
+                            ":",	
+                            {
+                                "Ref": "Dealmate"
+                            },
+                            "/*/*/*"
+                        ]
+                    ]
+                }
+            },
+            "Type": "AWS::Lambda::Permission"
+        },
+		"APIDeployment": {
+		"DependsOn": [ "signupResourceMethodpost","loginResourceMethodPost","verifyResourceMethodPost", "postdealviewsResourceMethod", "postdealcommentsResourceMethod", "postdealdislikesResourceMethod", "postdealResourceMethod", "postdeallikesResourceMethod", "postdealsharesResourceMethod", "postdealusertagsResourceMethod", "friendsResourceMethod", "getdealsbyuserResourceMethod", "postdealusedResourceMethod" ],
+            "Properties": {
+                "RestApiId": {
+                    "Ref": "Dealmate"
+                }
+            },
+            "Type": "AWS::ApiGateway::Deployment"
+        },
+	 "LambdaPostviews": {
+	 "DependsOn" : "WaitCondition",
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] },
+          "S3Key": { "Ref" : "DealsLambdaFileName" }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "RootRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.deals.PostViewsDao",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+    "Dealmate": {
+	"DependsOn" : "WaitCondition",
+      "Type": "AWS::ApiGateway::RestApi",
+      "Properties": {
+	    "Description": "A test API",
+        "Name": "Dealmate"
+        }
+      },
+    "postdealviewsResource": {
+	"DependsOn" : "WaitCondition",
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "postdealviews"
+      }
+    },
+    "postdealviewsResourceMethod": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ResourceId": {
+          "Ref": "postdealviewsResource"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+		  "PassthroughBehavior" : "WHEN_NO_MATCH",
+          "IntegrationResponses": [
+            {
+              
+              "StatusCode": "200"
+            }
+          ],
+          
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "LambdaPostviews",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty"
+            },
+            "ResponseParameters": {
+              "method.response.header.Authorization": true
+            },
+            "StatusCode": 200
+          }
+        ],
+        "RequestParameters": {
+          "method.request.path.param1": true
+        }
+        }
+      
+    },
+        "APIStage": {
+            "Properties": {
+                "CacheClusterEnabled": false,
+                "DeploymentId": {
+                    "Ref": "APIDeployment"
+                },
+                "RestApiId": {
+                    "Ref": "Dealmate"
+                },
+                "StageName": "dev"
+            },
+            "Type": "AWS::ApiGateway::Stage"
+        },    
+	
+"Authorizer": {
+		"DependsOn" : "WaitCondition",
+      "Type": "AWS::ApiGateway::Authorizer",
+      "Properties": {
+        "ProviderARNs" : [ {
+                     "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:cognito-idp:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":userpool/",
+                        { "Fn::GetAtt" : [ "CognitoUserPool", "Id" ] }
+                      ]
+                    ]
+        }],
+        "Type": "COGNITO_USER_POOLS",
+        "IdentitySource": "method.request.header.Authorization",
+        "Name": { "Ref" : "PoolName" },
+        "RestApiId": {
+          "Ref": "Dealmate"
+        }
+      }
+    },
+	"LambdaPostdeal": {
+	"DependsOn" : "WaitCondition",
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] },
+          "S3Key": { "Ref" : "DealsLambdaFileName" }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "RootRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.deals.PostDealDao",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+
+	  "APILambdaPermission1": {
+	  "DependsOn" : "WaitCondition",
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "LambdaPostviews"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    },
+		  "APILambdaPermission2": {
+		  "DependsOn" : "WaitCondition",
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "LambdaPostUsedDao"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    },
+	  "APILambdaPermission3": {
+	  "DependsOn" : "WaitCondition",
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "Lambdaposttags"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    },
+	  "APILambdaPermission4": {
+	  "DependsOn" : "WaitCondition",
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "Lambdapostshare"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    },
+	  "APILambdaPermission5": {
+	  "DependsOn" : "WaitCondition",
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "LambdaPostUsedDao"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    },
+	  "APILambdaPermission6": {
+	  "DependsOn" : "WaitCondition",
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "LambdaPostDislikes"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    },
+	  "APILambdaPermission7": {
+	  "DependsOn" : "WaitCondition",
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "LambdaPostComments"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    },
+	  "APILambdaPermission8": {
+	  "DependsOn" : "WaitCondition",
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "LambdaGetDealsbyuserId"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    },
+	  "APILambdaPermission9": {
+	  "DependsOn" : "WaitCondition",
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "LambdaFriends"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    },
+	  "APILambdaPermission10": {
+	  "DependsOn" : "WaitCondition",
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "LambdapostLikes"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    },
+	  "APILambdaPermission11": {
+	  "DependsOn" : "WaitCondition",
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "Lambdapostdeal"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    }, 	    
+    
+       
+    
+	      "LambdaPostComments": {
+      "Type": "AWS::Lambda::Function",
+	  "DependsOn" : "WaitCondition",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] },
+          "S3Key": { "Ref" : "DealsLambdaFileName" }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "RootRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.deals.PostCommentsDao",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+  
+    "postdealcommentsResource": {
+	"DependsOn" : "WaitCondition",
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart" :"postdealcomments"
+      }
+    },
+    "postdealcommentsResourceMethod": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ResourceId": {
+         "Ref":"postdealcommentsResource"
+        },
+ "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+		  "PassthroughBehavior" : "WHEN_NO_MATCH",
+          "IntegrationResponses": [
+            {
+              
+              "StatusCode": "200"
+            }
+          ],
+          
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "LambdaPostComments",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty"
+            },
+            "ResponseParameters": {
+              "method.response.header.Authorization": true
+            },
+            "StatusCode": 200
+          }
+        ],
+        "RequestParameters": {
+          "method.request.path.param1": true
+        }
+      }
+    },
+    
+	 "LambdaPostDislikes": {
+      "Type": "AWS::Lambda::Function",
+	  "DependsOn" : "WaitCondition",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] },
+          "S3Key": { "Ref" : "DealsLambdaFileName" }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "RootRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.deals.PostDislikesDao",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+    "postdealdislikesResource": {
+	"DependsOn" : "WaitCondition",
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "postdealdislikes"
+      }
+    },
+    "postdealdislikesResourceMethod": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ResourceId": {
+         "Ref": "postdealdislikesResource"
+        },
+        "ApiKeyRequired": "false",
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+		  "PassthroughBehavior" : "WHEN_NO_MATCH",
+          "IntegrationResponses": [
+            {
+              "StatusCode": "200"
+            }
+          ],
+          
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "LambdaPostDislikes",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty"
+            },
+            "ResponseParameters": {
+              "method.response.header.Authorization": "true"
+            },
+            "StatusCode": 200
+          }
+        ],
+        "RequestParameters": {
+          "method.request.path.param1": "true"
+        }
+      }
+    },
+   
+	   "Lambdapostdeal": {
+      "Type": "AWS::Lambda::Function",
+	  "DependsOn" : "WaitCondition",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] },
+          "S3Key": { "Ref" : "DealsLambdaFileName" }	  
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "RootRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.deals.PostDealDao",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+    "postdealResource": {
+	"DependsOn" : "WaitCondition",
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "postdeal"
+      }
+    },
+    "postdealResourceMethod": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ResourceId": {
+          "Ref": "postdealResource"
+        },
+         "ApiKeyRequired": "false",
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+		  "PassthroughBehavior" : "WHEN_NO_MATCH",
+          "IntegrationResponses": [
+            {
+              
+              "StatusCode": "200"
+            }
+          ],
+          
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "Lambdapostdeal",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty"
+            },
+            "ResponseParameters": {
+              "method.response.header.Authorization": "true"
+            },
+            "StatusCode": 200
+          }
+        ],
+        "RequestParameters": {
+          "method.request.path.param1": "true"
+        }
+      }
+    },
+   
+	 "LambdapostLikes": {
+      "Type": "AWS::Lambda::Function",
+	  "DependsOn" : "WaitCondition",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] },
+          "S3Key": { "Ref" : "DealsLambdaFileName" }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "RootRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.deals.PostLikesDao",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+   
+    "postdeallikesResource": {
+		"DependsOn" : "WaitCondition",
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "postdeallikes"
+      }
+    },
+    "postdeallikesResourceMethod": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ResourceId": {
+         "Ref": "postdeallikesResource"
+        },
+        "ApiKeyRequired": "false",
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+		  "PassthroughBehavior" : "WHEN_NO_MATCH",
+          "IntegrationResponses": [
+            {
+              
+              "StatusCode": "200"
+            }
+          ],
+          
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "LambdapostLikes",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty"
+            },
+            "ResponseParameters": {
+              "method.response.header.Authorization": "true"
+            },
+            "StatusCode": 200
+          }
+        ],
+        "RequestParameters": {
+          "method.request.path.param1": "true"
+        }
+      }
+    },
+    
+	   "Lambdapostshare": {
+      "Type": "AWS::Lambda::Function",
+	  "DependsOn" : "WaitCondition",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] },
+          "S3Key": { "Ref" : "DealsLambdaFileName" }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "RootRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.deals.PostSharesDao",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+   
+    "postdealsharesResource": {
+	"DependsOn" : "WaitCondition",
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "postdealshares"
+      }
+    },
+    "postdealsharesResourceMethod": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ResourceId": {
+        "Ref": "postdealsharesResource"
+        },
+        "ApiKeyRequired": "false",
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+		  "PassthroughBehavior" : "WHEN_NO_MATCH",
+          "IntegrationResponses": [
+            {
+              
+              "StatusCode": "200"
+            }
+          ],
+          
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "Lambdapostshare",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty"
+            },
+            "ResponseParameters": {
+              "method.response.header.Authorization": "true"
+            },
+            "StatusCode": 200
+          }
+        ],
+        "RequestParameters": {
+          "method.request.path.param1": "true"
+        }
+      }
+    },
+    
+	 "Lambdaposttags": {
+      "Type": "AWS::Lambda::Function",
+	  "DependsOn" : "WaitCondition",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] },
+          "S3Key": { "Ref" : "DealsLambdaFileName" }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "RootRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.deals.PostTagsDaos",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+    "postdealusertagsResource": {
+	"DependsOn" : "WaitCondition",
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "postdealusertags"
+      }
+    },
+    "postdealusertagsResourceMethod": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ResourceId": {
+         "Ref": "postdealusertagsResource"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+		  "PassthroughBehavior" : "WHEN_NO_MATCH",
+          "IntegrationResponses": [
+            {
+              
+              "StatusCode": "200"
+            }
+          ],
+          
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "Lambdaposttags",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty"
+            },
+            "ResponseParameters": {
+              "method.response.header.Authorization": "true"
+            },
+            "StatusCode": 200
+          }
+        ],
+        "RequestParameters": {
+          "method.request.path.param1": "true"
+        }
+      }
+    },
+    
+	"LambdaFriends": {
+      "Type": "AWS::Lambda::Function",
+	  "DependsOn" : "WaitCondition",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] },
+          "S3Key": { "Ref" : "DealsLambdaFileName" }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "RootRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.friends.FriendsDao",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+  
+    "friendsResource": {
+	"DependsOn" : "WaitCondition",
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "friends"
+      }
+    },
+    "friendsResourceMethod": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+           "Ref": "Dealmate"
+        },
+        "ResourceId": {
+         "Ref": "friendsResource"
+        },
+        "ApiKeyRequired": "false",
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+		  "PassthroughBehavior" : "WHEN_NO_MATCH",
+          "IntegrationResponses": [
+            {
+              
+              "StatusCode": "200"
+            }
+          ],
+          
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "LambdaFriends",
+                    "Arn"
+                  ]
+                },
+				
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty"
+            },
+            "ResponseParameters": {
+              "method.response.header.Authorization": "true"
+            },
+            "StatusCode": 200
+          }
+        ],
+        "RequestParameters": {
+          "method.request.path.param1": "true"
+        }
+      }
+    },
+    
+	   "LambdaGetDealsbyuserId": {
+      "Type": "AWS::Lambda::Function",
+	  "DependsOn" : "WaitCondition",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] },
+          "S3Key": { "Ref" : "DealsLambdaFileName" }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "RootRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.deals.GetDealsDao",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+    "getdealsbyuserResource": {
+	"DependsOn" : "WaitCondition",
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "getdealsbyuser"
+      }
+    },
+    "getdealsbyuserResourceMethod": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ResourceId": {
+        "Ref": "getdealsbyuserResource"
+        },
+        "ApiKeyRequired": "false",
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+		  "PassthroughBehavior" : "WHEN_NO_MATCH",
+          "IntegrationResponses": [
+            {
+              
+              "StatusCode": "200"
+            }
+          ],
+          
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "LambdaGetDealsbyuserId",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty"
+            },
+            "ResponseParameters": {
+              "method.response.header.Authorization": "true"
+            },
+            "StatusCode": 200
+          }
+        ],
+        "RequestParameters": {
+          "method.request.path.param1": "true"
+        }
+      }
+    },
+    
+	"LambdaPostUsedDao": {
+      "Type": "AWS::Lambda::Function",
+	  "DependsOn" : "WaitCondition",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] },
+          "S3Key": { "Ref" : "DealsLambdaFileName" }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "RootRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.deals.PostUsedDao",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+    "postdealusedResource": {
+	"DependsOn" : "WaitCondition",
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "postdealused"
+      }
+    },
+    "postdealusedResourceMethod": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ResourceId": {
+          "Ref": "postdealusedResource"
+        },
+        "ApiKeyRequired": "false",
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+		  "PassthroughBehavior" : "WHEN_NO_MATCH",
+          "IntegrationResponses": [
+            {
+              
+              "StatusCode": "200"
+            }
+          ],
+          
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "LambdaPostUsedDao",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty"
+            },
+            "ResponseParameters": {
+              "method.response.header.Authorization": "true"
+            },
+            "StatusCode": 200
+          }
+        ],
+        "RequestParameters": {
+          "method.request.path.param1": "true"
+        }
+      }
+    },
+
+    "CognitoUserPool": {
+		
+      "Type": "Custom::CognitoUserPool",
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "CognitoUserPoolFunction",
+            "Arn"
+          ]
+        },        
+        "PoolName": { "Ref" : "PoolName" },
+        "AliasAttributes": [
+          "phone_number",
+          "email"		  
+        ],		
+		"AutoVerifiedAttributes": { "Ref" : "AutoVerifiedAttributes" },
+		
+		"Policies": { 
+      "PasswordPolicy": { 
+         "MinimumLength": { "Ref" : "MinimumLengthForPasswordPolicy" }
+		 
+         
+      }
+   },
+	"PasswordPolicy": {
+            "MinimumLength": {
+              "Ref": "MinimumLengthForPasswordPolicy"
+            }
+			
+        },   
+		"AdminCreateUserConfig": {
+			"AllowAdminCreateUserOnly": { "Ref" : "AllowAdminCreateUserOnly" },
+			"InviteMessageTemplate": {
+			"EmailMessage": "Your username is {username} and temporary password is {####}.",
+			"EmailSubject": "Your temporary password",
+			"SMSMessage": "Your username is {username} and temporary password is {####}."
+      },
+      "UnusedAccountValidityDays": { "Ref" : "UnusedAccountValidityDays" }
+		},		
+		"MfaConfiguration": { "Ref" : "MfaConfiguration" },                
+        
+		"DeviceConfiguration": { 
+      "ChallengeRequiredOnNewDevice": { "Ref" : "ChallengeRequiredOnNewDevice" },
+      "DeviceOnlyRememberedOnUserPrompt": { "Ref" : "DeviceOnlyRememberedOnUserPrompt" }
+   },
+			
+   "Schema": [    	
+      { 
+         "AttributeDataType": "Number",		 
+         "Name"  : "postalcode",
+			"DeveloperOnlyAttribute" : "false",
+         "NumberAttributeConstraints": { 
+            "MaxValue": "1000000",
+            "MinValue": "0"
+         }         
+	  },
+	   { 
+         "AttributeDataType": "String",		 
+         "Name"  : "family_name",		 
+         "StringAttributeConstraints": { 
+            "MaxLength": "2048",
+            "MinLength": "0"
+         }         
+	  },
+	  { 
+         "AttributeDataType": "String",		 
+         "Name"  : { "Ref" : "RequiredAttributes" },		 
+         "StringAttributeConstraints": { 
+            "MaxLength": "2048",
+            "MinLength": "0"
+         }         
+	  },
+	  { 
+         "AttributeDataType": "String",		 
+         		 
+         "StringAttributeConstraints": { 
+            "MaxLength": "2048",
+            "MinLength": "0"
+         }         
+	  },
+	  { 
+         "AttributeDataType": "String",		 
+         		 
+         "StringAttributeConstraints": { 
+            "MaxLength": "2048",
+            "MinLength": "0"
+         }         
+	  }
+	  		
+   ],  
+ 
+
+   "SmsAuthenticationMessage": "SmsAuthenticationMessage",
+   "SmsConfiguration": { 
+      "ExternalId": "15861f6f-74bb-474f-b4e5-9bf7ec50b999",
+      "SnsCallerArn":  {
+          "Fn::GetAtt": [
+            "RootRole",
+            "Arn"
+          ]
+        }
+   },   
+   "SmsVerificationMessage": "Your Deal Mate verification code is {####}."  
+
+}
+},
+"CognitoUserPoolClient": {
+  "Type": "Custom::CreateUserPoolClient",
+  "DependsOn" : [ "CognitoUserPool" ],
+  "Properties": {
+	"ServiceToken": {
+          "Fn::GetAtt": [
+            "CognitoUserPoolClientFunction",
+            "Arn"
+          ]
+        },
+	"ClientName": { "Ref" : "UserPoolClientName" },
+	"GenerateSecret": true,
+	"UserPoolId": { "Fn::GetAtt" : [ "CognitoUserPool", "Id" ] },
+	"RefreshTokenValidity": 30
+	}
+	},     
+   
+    "CognitoUserPoolFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": {
+            "Fn::Join": [
+              "",
+              [
+                "var response = require(\"cfn-response\");",
+                "var AWS = require(\"aws-sdk\");",
+                "var cognito = new AWS.CognitoIdentityServiceProvider();",
+                "exports.handler = function (event, context) {",
+                "  var responseStatus = \"FAILED\";",
+                "  if (event.RequestType == \"Delete\") {",
+                "    cognito.listUserPools({ MaxResults: 60 }, function (err, data) {",
+                "      if (err) {",
+                "        console.log(err, err.stack);",
+                "        response.send(event, context, responseStatus);",
+                "      }",
+                "      else {",
+                "        console.log(data);",
+                "        var userPool = {};",
+                "        for(var i = 0; i < data.UserPools.length; i++) {",
+                "          if(data.UserPools[i].Name == event.ResourceProperties.PoolName) {",
+                "            userPool = data.UserPools[i];",
+                "            break;     ",
+                "          }",
+                "        }",
+                "        cognito.deleteUserPool({",
+                "          UserPoolId: userPool.Id",
+                "        }, function (err, data) {",
+                "          if (err) {",
+                "            console.log(err, err.stack);",
+                "            response.send(event, context, responseStatus);",
+                "          }",
+                "          response.send(event, context, \"SUCCESS\");",
+                "        });",
+                "      }",
+                "    });",
+                "  } else if (event.RequestType == \"Update\") {",
+                "    responseStatus = \"SUCCESS\";",
+                "    response.send(event, context, responseStatus);",
+                "  } else {",
+                "    var responseData = {};",
+				"    var myObj = event.ResourceProperties.PasswordPolicy;",
+				"    console.log(\"printing myObj 1\" , myObj);",
+				"    myObj[\"RequireLowercase\"] = true;",
+				"    myObj[\"RequireNumbers\"] = true;",
+				"    myObj[\"RequireSymbols\"] = false;",
+				"    myObj[\"RequireUppercase\"] = true;",
+				"    var myMainObj = {};",
+				"    myMainObj[\"PasswordPolicy\"] = myObj;",
+				"    console.log(\"printing myMainObj 1\" , myMainObj);",
+				"    var myObjj = event.ResourceProperties.Schema;",
+				"    console.log(\"printing myMainObjj 1\" , myObjj);",
+				"    myObjj[0][\"DeveloperOnlyAttribute\"] = false;",
+				"    myObjj[0][\"Mutable\"] = true;",
+				"    myObjj[0][\"Required\"] = false;",				
+				"    myObjj[1][\"Required\"] = true;",				
+				"    myObjj[2][\"Required\"] = true;",
+				"    if (myObjj[2][\"Required\"] == true){",
+				"    if (myObjj[2][\"Name\"] == 'phone_number'){",
+				"    myObjj[2][\"Name\"] = 'given_name';",						
+				"    myObjj[3][\"Name\"] = 'phone_number';",							
+				"    myObjj[3][\"Required\"] = true;",				
+				"}",
+				"else if (myObjj[2][\"Name\"] == 'email'){",
+				"    myObjj[2][\"Name\"] = 'given_name';",						
+				"    myObjj[3][\"Name\"] = 'email';",				
+				"    myObjj[3][\"Required\"] = true;",
+			    "}",
+				"else if (myObjj[2][\"Name\"] == 'phone_number','email'){",
+				"    myObjj[2][\"Name\"] = 'given_name';",						
+				"    myObjj[3][\"Name\"] = 'phone_number';",
+				"    myObjj[4][\"Name\"] = 'email';",				
+				"    myObjj[3][\"Required\"] = true;",				
+				"    myObjj[4][\"Required\"] = true;",
+			    "}",
+				"else {",
+				"    myObjj[2][\"Name\"] = 'given_name';",				
+			    "}",
+				"}",			
+				"    var myObjj1 = event.ResourceProperties.DeviceConfiguration;",
+				"    var myObj1 = myObjj1[\"ChallengeRequiredOnNewDevice\"] === 'true' ? true : false;",				
+				"  myObjj1[\"ChallengeRequiredOnNewDevice\"] = myObj1;",
+				"    var myObj2 = myObjj1[\"DeviceOnlyRememberedOnUserPrompt\"] === 'true' ? true : false;",				
+				"  myObjj1[\"DeviceOnlyRememberedOnUserPrompt\"] = myObj2;",
+				"    var myObj3 = event.ResourceProperties.AdminCreateUserConfig;",
+				"    var myObj4 = myObj3[\"AllowAdminCreateUserOnly\"] === 'true' ? true : false;",							
+				"  myObj3[\"AllowAdminCreateUserOnly\"] = myObj4;",				
+                "    cognito.createUserPool({",
+                "      PoolName: event.ResourceProperties.PoolName,",	
+                "      AliasAttributes: event.ResourceProperties.AliasAttributes,",
+                "      MfaConfiguration: event.ResourceProperties.MfaConfiguration,",
+                "      AutoVerifiedAttributes: event.ResourceProperties.AutoVerifiedAttributes,",
+                "      SmsVerificationMessage: event.ResourceProperties.SmsVerificationMessage,",
+                "      SmsConfiguration: event.ResourceProperties.SmsConfiguration,",
+				"      DeviceConfiguration: event.ResourceProperties.DeviceConfiguration,",
+                "      Schema: event.ResourceProperties.Schema,",
+                "      AdminCreateUserConfig: event.ResourceProperties.AdminCreateUserConfig,",				
+				"      Policies: myMainObj",
+                "     }, function (err, data) {",
+                "      if (err) {",
+                "        console.log(err, err.stack);",
+                "      }",
+                "      else {",
+                "        responseStatus = \"SUCCESS\";",
+                "        console.log(data);",
+                "        responseData = { Id: data.UserPool.Id };",
+                "      }",
+                "      response.send(event, context, responseStatus, responseData);",
+                "    });",
+                "  }",
+                "};"
+              ]
+            ]
+          }
+        },
+        "Description": "CognitoUserPoolFunction Function",
+        "Handler": "index.handler",
+        "MemorySize": 128,
+        "Role": {
+          "Fn::GetAtt": [
+            "RootRole",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs4.3",
+        "Timeout": 30
+      }
+    },
+  "CognitoUserPoolClientFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": {
+            "Fn::Join": [
+              "",
+              [
+                "var response = require(\"cfn-response\");",				
+                "var AWS = require(\"aws-sdk\");",				
+                "var cognito = new AWS.CognitoIdentityServiceProvider();",
+                "exports.handler = function (event, context) {",                    
+                "  var responseStatus = \"FAILED\";",                
+                "  if (event.RequestType == \"Delete\") {",
+                "    cognito.listUserPoolClients({ MaxResults: 60 }, function (err, data) {",
+                "      if (err) {",
+                "        console.log(err, err.stack);",
+                "        response.send(event, context, responseStatus);",
+                "      }",
+                "      else {",
+                "        console.log(data);",
+                "        var userPoolClient = {};",
+                "        for(var i = 0; i < data.UserPoolClients.length; i++) {",
+                "          if(data.UserPoolClients[i].Name == event.ResourceProperties.ClientName) {",
+                "            userPoolClient = data.UserPoolClients[i];",
+                "            break;     ",
+                "          }",
+                "        }",
+                "        cognito.deleteUserPoolClient({",
+                "          UserPoolClientId: userPoolClient.Id",
+                "        }, function (err, data) {",
+                "          if (err) {",
+                "            console.log(err, err.stack);",
+                "            response.send(event, context, responseStatus);",
+                "          }",
+                "          response.send(event, context, \"SUCCESS\");",
+                "        });",
+                "      }",
+                "    });",
+                "  } else if (event.RequestType == \"Update\") {",
+                "    responseStatus = \"SUCCESS\";",
+                "    response.send(event, context, responseStatus);",
+                "  } else {",
+                "    var responseData = {};",
+                "    cognito.createUserPoolClient({",				
+                "      ClientName: event.ResourceProperties.ClientName,",				
+                "      UserPoolId: event.ResourceProperties.UserPoolId,",				
+				"      RefreshTokenValidity: event.ResourceProperties.RefreshTokenValidity",				
+                
+				"     }, function (err, data) {",
+                "      if (err) {",
+                "        console.log(err, err.stack);",
+                "      }",
+                "      else {",
+                "        responseStatus = \"SUCCESS\";",
+                "        console.log(data);",
+				"        responseData = { ClientId: data.UserPoolClient.ClientId };",
+                "      }",
+                "      response.send(event, context, responseStatus, responseData);",
+                "    });",			
+                "  }",
+                "};"
+              ]
+            ]
+          }
+        },
+        "Description": "CognitoUserPoolFunction Function",
+        
+        "Handler": "index.handler",
+        "MemorySize": 128,
+        "Role": {
+          "Fn::GetAtt": [
+            "RootRole",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs4.3",
+        "Timeout": 30
+      }
+    }		
+		
+   
+	},
+	"Mappings": {
+    "AWSRegion2AMI": {
+      "us-east-1": {
+        "AMI": "ami-b73b63a0"
+      },
+      "us-east-2": {
+        "AMI": "ami-58277d3d"
+      },
+      "us-west-2": {
+        "AMI": "ami-5ec1673e"
+      },
+      "us-west-1": {
+        "AMI": "ami-23e8a343"
+      },
+      "eu-west-1": {
+        "AMI": "ami-9398d3e0"
+      },
+      "eu-central-1": {
+        "AMI": "ami-f9619996"
+      },
+      "ap-southeast-1": {
+        "AMI": "ami-b953f2da"
+      },
+      "ap-northeast-2": {
+        "AMI": "ami-983ce8f6"
+      },
+      "ap-northeast-1": {
+        "AMI": "ami-0c11b26d"
+      },
+      "ap-southeast-2": {
+        "AMI": "ami-db704cb8"
+      },
+      "ap-south-1": {
+        "AMI": "ami-34b4c05b"
+      },
+      "sa-east-1": {
+        "AMI": "ami-97831ffb"
+      },
+      "ca-central-1": {
+        "AMI": "ami-b48b39d0"
+      },
+      "eu-west-2": {
+        "AMI": "ami-d6cbc1b2"
+      }
+    }
+  },
+  "Outputs":{
+	"SignUpInvokeURL": {
+      "Description": "The Invoke URL of the Signup API stage",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",	
+					{
+					"Ref": "Dealmate"
+					},
+					".execute-api.",
+					{ "Ref": "AWS::Region" },
+					".amazonaws.com/",
+					{ "Ref": "APIStage" },
+					"/signup"					
+					]]}
+	
+	},
+	"LoginInvokeURL": {
+      "Description": "The Invoke URL of the Login API stage",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",	
+					{
+					"Ref": "Dealmate"
+					},
+					".execute-api.",
+					{ "Ref": "AWS::Region" },
+					".amazonaws.com/",
+					{ "Ref": "APIStage" },
+					"/login"					
+					]]}		
+	
+	},
+	"VerifyInvokeURL": {
+      "Description": "The Invoke URL of the Verify API stage",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",	
+					{
+					"Ref": "Dealmate"
+					},
+					".execute-api.",
+					{ "Ref": "AWS::Region" },
+					".amazonaws.com/",
+					{ "Ref": "APIStage" },
+					"/verify"					
+					]]}				
+			
+	
+	}
+	}
+	}	
+    
+	
+	
+	
+	
+	
+	

@@ -1,0 +1,423 @@
+{
+ "AWSTemplateFormatVersion": "2010-09-09",
+ "Description": "Template For iam role", 
+  "Parameters": {
+  "SQSQueueName" :{
+      "Description": " Please Enter the name for a queue",
+ "Type":"String"
+ },
+  "ReadCapacityUnits": {
+     "Description": "Provisioned read throughput",
+     "Type": "Number",
+     "Default": "500",
+     "MinValue": "5",
+     "MaxValue": "10000",
+     "ConstraintDescription": "must be between 5 and 10000"
+   },
+   "WriteCapacityUnits": {
+     "Description": "Provisioned write throughput",
+     "Type": "Number",
+     "Default": "1000",
+     "MinValue": "5",
+     "MaxValue": "10000",
+     "ConstraintDescription": "must be between 5 and 10000"
+   
+ },
+  "UseExistingBucket": {
+	"Description":"Please select any one,(True/False),If you want to create new bucket choose FALSE",
+      "Type": "String",
+      "Default": "false",
+      "AllowedValues": [
+        "true",
+        "false"
+      ]
+    },
+   "S3BucketName": {
+	"Description":"Please enter the Unique Bucket name should be within 8 characters, Leave the bucket name empty to create bucket with default random name",
+      "Type": "String",
+	  "AllowedPattern" : "[a-z0-9]*"
+   }
+    },
+  
+   "Conditions": {
+    "BucketExists": {
+      "Fn::Equals": [
+        {
+          "Ref": "UseExistingBucket"
+        },
+        "false"
+      ]
+    },
+	"BucketExistsTrue": {
+      "Fn::Equals": [
+        {
+          "Ref": "UseExistingBucket"
+        },
+        "true"
+      ]
+    },
+    "BucketNameEmpty": {
+      "Fn::Equals": [
+        {
+          "Ref": "S3BucketName"
+        },
+        ""
+      ]
+    },
+    "BucketExistsAndBucketNameEmpty": {
+      "Fn::And": [
+        {
+          "Condition": "BucketExists"
+        },
+        {
+          "Condition": "BucketNameEmpty"
+        }
+      ]
+    },
+    "BucketExistsAndBucketNameNotEmpty": {
+      "Fn::And": [
+        {
+          "Condition": "BucketExists"
+        },
+        {
+          "Fn::Not": [
+            {
+              "Condition": "BucketNameEmpty"
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+ "Resources": { 
+  "MoxieitFolderWithUserBucketName": {
+      "Type": "AWS::S3::Bucket",
+      "Condition": "BucketExistsAndBucketNameNotEmpty",
+      "Properties": {
+        "BucketName": {
+          "Ref": "S3BucketName"
+        }
+      }
+    },
+    "MoxieitFolderWithOutUserBucketName": {
+      "Type": "AWS::S3::Bucket",
+      "Condition": "BucketExistsAndBucketNameEmpty"
+    },
+  "TableOfUsers": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "UserId", "AttributeType": "S" }          
+        ],
+        "KeySchema": [
+          { "AttributeName": "UserId", "KeyType": "HASH" }          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Users"        
+      }
+    },
+	"TableOfAudience": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "UserId", "AttributeType": "S" },
+          { "AttributeName": "List", "AttributeType": "S" }          
+        ],
+        "KeySchema": [
+          { "AttributeName": "UserId", "KeyType": "HASH" },          
+		  { "AttributeName": "List", "KeyType": "RANGE" }		  
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+		"TableName" : "Audience"   
+      }
+    },
+	"TableOfAudienceList": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "EmailId", "AttributeType": "S" },		 
+          { "AttributeName": "Id", "AttributeType": "S" }		  
+        ],
+        "KeySchema": [
+          { "AttributeName": "Id", "KeyType": "HASH" },          
+		  { "AttributeName": "EmailId", "KeyType": "RANGE" }		  
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+		"TableName" : "AudienceList"       
+      }
+    },	
+	"TableOfUserReport": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "AudienceMail", "AttributeType": "S" },
+		  { "AttributeName": "CampaignUrl", "AttributeType": "S" }          
+		  ],
+        "KeySchema": [
+          { "AttributeName": "CampaignUrl", "KeyType": "HASH" },
+          { "AttributeName": "AudienceMail", "KeyType": "RANGE" } 		  
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+		"TableName" : "UserReport"        
+      },
+	  "DependsOn" : "TableOfUsers"
+    },	
+	"TableOfReport": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [		
+		{ "AttributeName": "AudienceMail", "AttributeType": "S" },          
+		  { "AttributeName": "CampaignUrl", "AttributeType": "S" }          	  
+		  ],
+        "KeySchema": [
+          { "AttributeName": "CampaignUrl", "KeyType": "HASH" }, 		  
+		  { "AttributeName": "AudienceMail", "KeyType": "RANGE" }		  
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Report" 
+      },
+	  "DependsOn" : "TableOfAudienceList"
+    },	
+	"TableOfUsersJwt": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [		
+          { "AttributeName": "Token", "AttributeType": "S" }		 
+		  ],
+        "KeySchema": [
+          { "AttributeName": "Token", "KeyType": "HASH" }		  
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Users_Jwt"        
+      }
+    },
+	
+"queue1" : {
+   "Type" : "AWS::SQS::Queue",
+   "Properties" : {
+      "QueueName":  { "Ref" :"SQSQueueName" },
+      "VisibilityTimeout": 30 ,
+	  "MessageRetentionPeriod" : 1209600
+   }
+},
+"RootRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                        "Service": [ "lambda.amazonaws.com" ,
+                  "ec2.amazonaws.com"  ]
+                     },
+                     "Action": [ "sts:AssumeRole" ]
+                   }
+               ]
+             },
+              "Path": "/",
+        "Policies": [
+		{
+            "PolicyName": "S3BucketPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+      "Effect": "Allow",
+      "Action": "s3:ListAllMyBuckets",
+      "Resource": "arn:aws:s3:::*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetBucketLocation"
+      ],
+      "Resource": {
+        "Fn::Join": [
+                                  "",
+                                  [
+                                     "arn:aws:s3:::",
+								    {"Fn::If": ["BucketExistsTrue", {"Ref":"S3BucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] }
+									]]
+    }},
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": { "Fn::Join": [
+                                  "",
+                                  [
+                                     "arn:aws:s3:::",
+								    {"Fn::If": ["BucketExistsTrue", {"Ref":"S3BucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] },
+									"/","*" ]]
+
+    }}]}},
+			  {
+	"PolicyName" :"QueuePolicy",      
+        "PolicyDocument":{
+          "Version":"2012-10-17",
+          "Statement":[
+            {
+              "Sid":"AllowPermissions",
+	      "Effect":"Allow", 
+ 	      "Action":[ "sqs:*" ],
+	       "Resource": {
+		 "Fn::Join": [
+                                  "",
+                                  [
+                                     "arn:aws:sqs:",
+                                     { "Ref": "AWS::Region" },
+                                     ":",
+                                     { "Ref": "AWS::AccountId" },":", { "Ref" : "SQSQueueName" } ]
+    
+              ]
+			  }
+            }
+          ]
+        }
+      },
+	  {
+                   "PolicyName": "DynamoDBPolicy",
+                   "PolicyDocument": {
+                      "Version": "2012-10-17",
+                     "Statement": [
+                         {
+                            "Effect": "Allow",
+                            "Action": "*",
+                            "Resource": {
+                               "Fn::Join": [
+                                  "",
+                                  [
+                                     "arn:aws:dynamodb:",
+                                     { "Ref": "AWS::Region" },
+                                     ":",
+                                     { "Ref": "AWS::AccountId" },
+                                     ":table/",{ "Ref": "TableOfUsers" }  
+                                  ]
+                               ]
+                            }                           
+                         },
+                          {
+                            "Effect": "Allow",
+                            "Action": "*",
+                            "Resource": {
+                               "Fn::Join": [
+                                  "",
+                                  [
+                                     "arn:aws:dynamodb:",
+                                     { "Ref": "AWS::Region" },
+                                     ":",
+                                     { "Ref": "AWS::AccountId" },
+                                     ":table/",{ "Ref": "TableOfAudience" }  
+                                  ]
+                               ]
+                            }                           
+                         },
+						  {
+                            "Effect": "Allow",
+                            "Action": "*",
+                            "Resource": {
+                               "Fn::Join": [
+                                  "",
+                                  [
+                                     "arn:aws:dynamodb:",
+                                     { "Ref": "AWS::Region" },
+                                     ":",
+                                     { "Ref": "AWS::AccountId" },
+                                     ":table/",{ "Ref": "TableOfAudienceList"}
+                                  ]
+                               ]
+                            }                           
+                         },
+						  {
+                            "Effect": "Allow",
+                            "Action": "*",
+                            "Resource": {
+                               "Fn::Join": [
+                                  "",
+                                  [
+                                     "arn:aws:dynamodb:",
+                                     { "Ref": "AWS::Region" },
+                                     ":",
+                                     { "Ref": "AWS::AccountId" },
+                                     ":table/",{"Ref":"TableOfUserReport"}  
+                                  ]
+                               ]
+                            }                           
+                         },
+						  {
+                            "Effect": "Allow",
+                            "Action": "*",
+                            "Resource": {
+                               "Fn::Join": [
+                                  "",
+                                  [
+                                     "arn:aws:dynamodb:",
+                                     { "Ref": "AWS::Region" },
+                                     ":",
+                                     { "Ref": "AWS::AccountId" },
+                                     ":table/",{"Ref":"TableOfReport"}  
+                                  ]
+                               ]
+                            }                           
+                         },
+						  {
+                            "Effect": "Allow",
+                            "Action": "*",
+                            "Resource": {
+                               "Fn::Join": [
+                                  "",
+                                  [
+                                     "arn:aws:dynamodb:",
+                                     { "Ref": "AWS::Region" },
+                                     ":",
+                                     { "Ref": "AWS::AccountId" },
+                                     ":table/",{ "Ref": "TableOfUsersJwt" }  
+                                  ]
+                               ]
+                            }                           
+                         }
+                      ]
+                   }
+                }
+]}},
+ "RootInstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          {
+            "Ref": "RootRole"
+          }
+        ]
+      }
+    }
+	}
+	}
+	
+	
+	      

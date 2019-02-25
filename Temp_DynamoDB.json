@@ -1,0 +1,495 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+"Description": "AWS CloudFormation Template DynamoDb",
+ "Metadata": {
+    "AWS::CloudFormation::Interface": {
+      "ParameterGroups":[
+	  {
+          "Label": {
+            "default": "DynamoDB Configuration"
+          },
+          "Parameters": [
+            "ReadCapacityUnits",
+			"WriteCapacityUnits"
+          ]
+        }],		
+		"ParameterLabels": {
+		"ReadCapacityUnits" :{
+		"default":"ReadCapacityUnits"
+		},
+		"WriteCapacityUnits":{
+		"default":"WriteCapacityUnits"
+		}
+	  }	
+	}
+	},
+  "Parameters": {
+    "ReadCapacityUnits": {
+      "Description": "Please Enter Provisioned Read throughput",
+      "Type": "Number",
+      "Default": "5",
+      "MinValue": "5",
+      "MaxValue": "10000",
+      "ConstraintDescription": "must be between 5 and 10000"
+    },
+
+    "WriteCapacityUnits": {
+      "Description": "Please Enter Provisioned Write throughput",
+      "Type": "Number",
+      "Default": "10",
+      "MinValue": "5",
+      "MaxValue": "10000",
+      "ConstraintDescription": "must be between 5 and 10000"
+  }
+  },
+  "Resources": {
+"TableOfDealShares": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "DealId", "AttributeType": "S" },
+          { "AttributeName": "ShareId", "AttributeType": "S" }      
+        ],
+        "KeySchema": [
+          { "AttributeName": "DealId", "KeyType": "HASH" },
+          { "AttributeName": "ShareId", "KeyType": "RANGE" }          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deal_Shares"
+        
+     }
+	 },
+
+"TableOfDealMateCIbuilds": {
+
+      "Type": "AWS::DynamoDB::Table",
+	  "DependsOn" :"TableOfDealShares",
+	   "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "project", "AttributeType": "S" },
+          { "AttributeName": "buildNum", "AttributeType": "S" }
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "project", "KeyType": "HASH" },
+		  { "AttributeName": "buildNum", "KeyType": "RANGE" }
+          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "DealMate-CI-builds"
+	        
+      }
+	  
+	  },
+
+"TableOfDealMateCIConfig": {
+"DependsOn": ["TableOfDealMateCIbuilds" ],
+      "Type": "AWS::DynamoDB::Table",
+	  
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "project", "AttributeType": "S" }
+              ],
+        "KeySchema": [
+          { "AttributeName": "project", "KeyType": "HASH" }
+          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "DealMate-CI-config"
+        
+      }
+	  },
+
+"TableOfDeals": {
+"DependsOn": [ "TableOfDealMateCIConfig" ],
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "DealId", "AttributeType": "S" }         
+        ],
+        "KeySchema": [
+          { "AttributeName": "DealId", "KeyType": "HASH" }
+          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals"
+      }
+	  },
+
+"TableOfDealsComments": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "DealId", "AttributeType": "S" },
+          {"AttributeName": "CommentId", "AttributeType": "S" }
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "DealId", "KeyType": "HASH" },
+		  { "AttributeName": "CommentId", "KeyType": "RANGE" }
+          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals_Comments"
+        
+      }
+},
+
+"TableOfDealsDislikes": {
+      "Type": "AWS::DynamoDB::Table",
+	 "DependsOn": ["TableOfDealsComments" ],
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "DealId", "AttributeType": "S" },
+          {"AttributeName": "DislikeId", "AttributeType": "S" }
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "DealId", "KeyType": "HASH" },
+		  { "AttributeName": "DislikeId", "KeyType": "RANGE" }
+          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals_Dislikes"
+        
+      }
+},
+
+"TableOfDealslikes": {
+"DependsOn": [ "TableOfDealsDislikes" ],
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "DealId", "AttributeType": "S" },
+          {"AttributeName": "LikeId", "AttributeType": "S" }
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "DealId", "KeyType": "HASH" },
+		  { "AttributeName": "LikeId", "KeyType": "RANGE" }
+          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals_Likes"
+        
+   }
+},
+
+"TableOfDealsLoc": {
+"DependsOn": [ "TableOfDealslikes" ],
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "hashKey", "AttributeType": "S" },
+          {"AttributeName": "rangeKey", "AttributeType": "S" }
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "hashKey", "KeyType": "HASH" },
+          { "AttributeName": "rangeKey", "KeyType": "RANGE" }
+          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals_Loc"
+        
+   }
+},
+"TableOfDealsLocation": {
+"DependsOn": [ "TableOfDealsLoc" ],
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "hashKey", "AttributeType": "S" },
+          {"AttributeName": "rangeKey", "AttributeType":"S"}
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "hashKey", "KeyType": "HASH" },
+          { "AttributeName": "rangeKey", "KeyType": "RANGE" }
+          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals_Location"
+        
+   }
+},
+
+"TableOfDealsPrivacy": {
+"DependsOn": [ "TableOfDealsLocation" ],
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "DealId", "AttributeType": "S" }
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "DealId", "KeyType": "HASH" }          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals_Privacy"
+        
+   }
+},
+
+"TableOfDealsReminders": {
+"DependsOn": [ "TableOfDealsLocation" ],
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "DealId", "AttributeType": "S" },
+          { "AttributeName": "ReminderId", "AttributeType": "S" }
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "DealId", "KeyType": "HASH" },
+			{ "AttributeName": "ReminderId", "KeyType": "RANGE" }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals_Reminders"
+        
+   }
+},
+
+"TableOfDealsTags": {
+"DependsOn":[ "TableOfDealsReminders" ],
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "DealId", "AttributeType": "S" }       
+        ],
+        "KeySchema": [
+          { "AttributeName": "DealId", "KeyType": "HASH" }          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals_Tags"
+        
+   }
+},
+
+"TableOfDealsUsed": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "DealId", "AttributeType": "S" } ,
+          { "AttributeName": "UserId", "AttributeType": "S" }      
+        ],
+        "KeySchema": [
+          { "AttributeName": "DealId", "KeyType": "HASH" },
+			{ "AttributeName": "UserId", "KeyType": "RANGE" }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals_Used"
+        
+   }
+},
+
+"TableOfDealsViews": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "DealId", "AttributeType": "S" },
+          { "AttributeName": "ViewsId", "AttributeType": "S" }
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "DealId", "KeyType": "HASH" },
+		  { "AttributeName": "ViewsId", "KeyType": "RANGE" }          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Deals_Views"
+        
+   }
+},
+ "TableOfUsers": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "UserId", "AttributeType": "S" },
+          { "AttributeName": "temp", "AttributeType": "S" }
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "UserId", "KeyType": "HASH" },
+          
+		  { "AttributeName": "temp", "KeyType": "RANGE" }
+		  
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+		"TableName" : "Users"
+	}
+},	
+
+ "TableOfUsersFriends": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "UserId", "AttributeType": "S" }          
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "UserId", "KeyType": "HASH" }   
+		 
+		  
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+		"TableName" : "Users_Friends"
+	}
+},	
+"TableOfUsersTags": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "UserId", "AttributeType": "S" }         
+		  
+        ],
+        "KeySchema": [
+          { "AttributeName": "UserId", "KeyType": "HASH" }   
+		 
+		  
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+		"TableName" : "Users_Tags"       
+      }
+    }	
+		
+  
+  
+  }, 
+   "Outputs" : {
+     "TableName1" : {
+       "Value" : {"Ref" : "TableOfDealShares"},
+       "Description" : "Name of the newly created DynamoDB table1"
+     },
+	 "TableName2" : {
+       "Value" : {"Ref" : "TableOfDealMateCIbuilds"},
+       "Description" : "Name of the newly created DynamoDB table2"
+     },
+	 "TableName3" : {
+       "Value" : {"Ref" : "TableOfDealMateCIConfig"},
+       "Description" : "Name of the newly created DynamoDB table3"
+     },
+	 "TableName4" : {
+       "Value" : {"Ref" : "TableOfDeals"},
+       "Description" : "Name of the newly created DynamoDB table4"
+     },
+	 "TableName5" : {
+       "Value" : {"Ref" : "TableOfDealsComments"},
+       "Description" : "Name of the newly created DynamoDB table5"
+	
+     },
+	 "TableName6" : {
+       "Value" : {"Ref" : "TableOfDealsDislikes"},
+       "Description" : "Name of the newly created DynamoDB table6"
+     },
+	
+	"TableName7" : {
+       "Value" : {"Ref" : "TableOfDealslikes"},
+       "Description" : "Name of the newly created DynamoDB table7"
+     },
+	
+	"TableName8" : {
+       "Value" : {"Ref" : "TableOfDealsLoc"},
+       "Description" : "Name of the newly created DynamoDB table8"
+     },
+	
+	"TableName9" : {
+       "Value" : {"Ref" : "TableOfDealsLocation"},
+       "Description" : "Name of the newly created DynamoDB table9"
+     },
+	
+	
+	"TableName10" : {
+       "Value" : {"Ref" : "TableOfDealsPrivacy"},
+       "Description" : "Name of the newly created DynamoDB table10"
+     },
+
+        
+	"TableName11" : {
+       "Value" : {"Ref" : "TableOfDealsReminders"},
+       "Description" : "Name of the newly created DynamoDB table11"
+     },
+
+	
+	"TableName12" : {
+       "Value" : {"Ref" : "TableOfDealsTags"},
+       "Description" : "Name of the newly created DynamoDB table12"
+     },
+     
+	"TableName13" : {
+       "Value" : {"Ref" : "TableOfDealsUsed"},
+       "Description" : "Name of the newly created DynamoDB table13"
+      },
+
+	"TableName14" : {
+       "Value" : {"Ref" : "TableOfDealsViews"},
+       "Description" : "Name of the newly created DynamoDB table14"
+      },
+	
+	"TableName15" : {
+       "Value" : {"Ref" : "TableOfUsers"},
+       "Description" : "Name of the newly created DynamoDB table16"
+      },
+	
+	"TableName16" : {
+       "Value" : {"Ref" : "TableOfUsersFriends"},
+       "Description" : "Name of the newly created DynamoDB table17"
+      },
+
+	"TableName17" : {
+       "Value" : {"Ref" : "TableOfUsersTags"},
+       "Description" : "Name of the newly created DynamoDB table18"
+	}
+   }
+   }
+  

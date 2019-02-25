@@ -1,0 +1,73 @@
+
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Metadata": {
+	  "AWS::CloudFormation::Interface": {
+      "ParameterGroups": [
+        {
+          "Label": {
+            "default": "SecurityGroup Configuration"
+          },
+          "Parameters": [
+            "VpcId"
+          ]
+        }     
+],
+	   "ParameterLabels": {
+	   "VpcId": {
+          "default": "VpcId"
+        
+		}
+		}
+		}
+		},
+		"Parameters" : {
+	   "VpcId": {
+	   "Description":"Please select default VpcId to create instance",
+      "Type": "AWS::EC2::VPC::Id"
+     }
+		},
+   
+	"Resources": {
+	"SecurityGroup" :
+	{
+	 "Type" : "AWS::EC2::SecurityGroup",
+	 "Properties" : {
+	  "GroupDescription" : "Security group",
+	 "VpcId" : { "Ref" : "VpcId" },
+       "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "CidrIp": "0.0.0.0/0",
+                        "FromPort": "22",
+                        "ToPort": "22"
+                    },
+                    {
+						 "IpProtocol": "tcp",
+                        "CidrIp": "0.0.0.0/0",
+                        "FromPort": "25",
+                        "ToPort": "25"
+                    },
+                    {
+						 "IpProtocol": "tcp",
+                        "CidrIp": "0.0.0.0/0",
+                        "FromPort": "80",
+                        "ToPort": "80"
+                    },
+                    {
+						 "IpProtocol": "tcp",
+                        "CidrIp": "0.0.0.0/0",
+                        "FromPort": "8080",
+                        "ToPort": "8080"
+                    }
+              
+			  ]
+            }
+			}
+			}
+			}
+			
+        
+		
+		
+        

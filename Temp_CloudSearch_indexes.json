@@ -1,0 +1,218 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Custom Resource Types for managing SWF resources", 
+  "Parameters": {
+  "DomainName": {
+			"Type": "String",			
+			"Description": "Please Enter The Name of the CloudSearch Domain"
+		}
+  },
+	
+  "Resources": {
+    "CloudSearchDomain": {	
+      "Type": "Custom::CloudSearch",
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "CloudSearchFunction",
+            "Arn"
+          ]
+        },        
+        "DomainName": { "Ref" : "DomainName" }
+		}
+		}, 
+"CloudSearchFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": {
+            "Fn::Join": [
+              "",
+              [
+                "var response = require(\"cfn-response\");",
+                "var AWS = require(\"aws-sdk\");",
+				"var cloudsearch = new AWS.CloudSearch();",
+                "exports.handler = function (event, context) {",
+				"  var responseData = {};",
+				"    cloudsearch.createDomain({",
+                "      DomainName: event.ResourceProperties.DomainName,",
+				"     }, function (err, data) {",
+                "      if (err) {",
+                "        console.log(err, err.stack);",
+                "      }",
+                "      else {",
+                "        responseStatus = \"SUCCESS\";",
+                "        console.log(data);",
+                "        responseData = { DomainName: data.DomainName };",
+                "      }",
+                "      response.send(event, context, responseStatus, responseData);",
+                "    });",
+				"};"
+			  ]
+            ]
+          }
+        },
+	    "Description": "CloudSearchFunction",
+        "Handler": "index.handler",
+        "MemorySize": 128,
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExeccloudsearchRole",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs4.3",
+        "Timeout": 30
+      }
+    },		
+    "CloudSearchIndex1": {	
+      "Type": "Custom::CloudSearch",
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "CloudSearchIndex1Function",
+            "Arn"
+          ]
+        },        
+        "DomainName": { "Ref" : "DomainName" },
+		"IndexField": [{
+		"IndexFieldName":"creationdate",
+		"IndexFieldType":"text",
+		"TextOptions": {     
+      
+		
+		}
+		},
+		{
+		"IndexFieldName":"dealid",
+		"IndexFieldType":"text",
+		"TextOptions": {     
+      
+		
+		}
+		}]
+		
+		}
+		},
+	
+
+"CloudSearchIndex1Function": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": {
+            "Fn::Join": [
+              "",
+              [
+                "var response = require(\"cfn-response\");",
+                "var AWS = require(\"aws-sdk\");",
+				"var cloudsearch = new AWS.CloudSearch();",
+                "exports.handler = function (event, context) {",
+				"  var responseData = {};",				
+				"    var myObj = event.ResourceProperties.IndexField;",
+				"    console.log(\"printing myObj\" , myObj);",				
+				"        for(var i = 0; i < myObj.length; i++) {",														
+				"    cloudsearch.defineIndexField({",
+                "      DomainName: event.ResourceProperties.DomainName,",
+				"      IndexField: event.ResourceProperties.IndexField[i]",
+				
+				"     }, function (err, data) {",
+                "      if (err) {",
+                "        console.log(err, err.stack);",
+                "      }",
+                "      else {",
+                "        responseStatus = \"SUCCESS\";",
+                "        console.log(data);",
+                "        responseData = { IndexFieldName: data.IndexFieldName };",
+                "      }",
+                "      response.send(event, context, responseStatus, responseData);",
+                "    });",
+				"}",
+				"};"
+			  ]
+            ]
+          }
+        },
+	    "Description": "CloudSearchFunction",
+        "Handler": "index.handler",
+        "MemorySize": 128,
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExeccloudsearchRole",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs4.3",
+        "Timeout": 30
+      }
+    },
+
+
+        "LambdaExeccloudsearchRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "lambda.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "Policies": [
+                    {
+                        "PolicyName": "lambda_dynamostreams_exec_role_photoapp",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "lambda:InvokeFunction"
+                                    ],
+                                    "Resource": [
+                                        "*"
+                                    ]
+                                },
+								{
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "logs:CreateLogGroup",
+                                        "logs:CreateLogStream",
+                                        "logs:PutLogEvents"
+                                    ],
+                                    "Resource": [
+                                        "arn:aws:logs:*:*:*"
+                                    ]
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "cloudsearch:*"
+                                    ],
+                                    "Resource": [
+                                        "*"
+                                    ]
+                                },
+   {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "*"
+                                    ],
+                                    "Resource": [
+                                        "*"
+                                    ]
+                                } 								
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+
+}
+}	

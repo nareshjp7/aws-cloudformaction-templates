@@ -1,0 +1,1740 @@
+ {
+  "AWSTemplateFormatVersion": "2010-09-09",
+"Description": "AWS CloudFormation Template Apis",
+"Parameters": {
+        "LambdaFileName": {
+            "Description": "Name of the ZIP file with lambda function sources inside S3 bucket",
+            "Default": "dealmate.zip",
+			"Type": "String"
+        },
+        "LambdaSourceBucket": {
+            "Description": "Name of the bucket where lambda function sources is stored",
+            "Default": "dealmateapi",
+			"Type": "String"
+        }
+    },
+ "Resources": {
+ "LambdaExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "lambda.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        },
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "root",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "arn:aws:logs:*:*:*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "cognito-identity:CreateIdentityPool",
+                    "cognito-identity:DeleteIdentityPool",
+                    "cognito-identity:UpdateIdentityPool",
+                    "cognito-identity:SetIdentityPoolRoles"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
+          },
+          {
+            "PolicyName": "S3BucketPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": "arn:aws:s3:::*/*"
+                }
+              ]
+            }
+          },
+          {
+            "PolicyName": "DynamoDBPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": "arn:aws:dynamodb:*:*:table/*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+	"Lambdanodejs": {
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Ref": "LambdaSourceBucket"
+                    },
+                    "S3Key": {
+                        "Ref": "LambdaFileName"
+                    }
+                },
+                "Handler": "index.handler",
+                "MemorySize": 128,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambdaExecutionRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "nodejs4.3",
+                "Timeout": 30
+            },
+            "Type": "AWS::Lambda::Function"
+        },
+	"signupResource": {
+            "Properties": {
+                "ParentId": {
+                    "Fn::GetAtt": [
+                        "Dealmate",
+                        "RootResourceId"
+                    ]
+                },
+                "PathPart": "signup",
+                "RestApiId": {
+                    "Ref": "Dealmate"
+                }
+            },
+            "Type": "AWS::ApiGateway::Resource"
+        },
+		        "signupResourceMethodpost": {
+            "Properties": {
+                "ApiKeyRequired": false,
+                "AuthorizationType": "NONE",
+                "HttpMethod": "POST",
+                "Integration": {
+                    "IntegrationHttpMethod": "POST",
+					"PassthroughBehavior" : "WHEN_NO_MATCH",
+                    "IntegrationResponses": [	
+                        {
+                            
+                            "StatusCode": "200"
+                        }
+                        
+                    ],
+                    
+                    "Type": "AWS",
+                    "Uri": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "arn:aws:apigateway:",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                ":lambda:path/2015-03-31/functions/",
+                                {
+                                    "Fn::GetAtt": [
+                                        "Lambdanodejs",
+                                        "Arn"
+                                    ]
+                                },
+                                "/invocations"
+                            ]
+                        ]
+                    }
+                },
+                "MethodResponses": [{
+      "ResponseModels": {
+        "application/json": "Empty"
+      },
+      "ResponseParameters": {
+        "method.response.header.Authorization": true
+      },
+      "StatusCode": 200
+    }],
+                "RequestParameters": {
+                    "method.request.path.param1": true
+                    
+                },
+                "ResourceId": {
+                    "Ref": "signupResource"
+                },
+                "RestApiId": {
+                    "Ref": "Dealmate"
+                }
+            },
+            "Type": "AWS::ApiGateway::Method"
+        },
+ "loginResource": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "login"
+      }
+    },
+         "loginResourceMethodPost": {
+            "Properties": {
+                "ApiKeyRequired": false,
+                "AuthorizationType": "NONE",
+                "HttpMethod": "POST",
+                "Integration": {
+                    "IntegrationHttpMethod": "POST",
+					"PassthroughBehavior" : "WHEN_NO_MATCH",
+                    "IntegrationResponses": [	
+                        {
+                            
+                            "StatusCode": "200"
+                        }
+                        
+                    ],
+                    
+                    "Type": "AWS",
+                    "Uri": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "arn:aws:apigateway:",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                ":lambda:path/2015-03-31/functions/",
+                                {
+                                    "Fn::GetAtt": [
+                                        "Lambdanodejs",
+                                        "Arn"
+                                    ]
+                                },
+                                "/invocations"
+                            ]
+                        ]
+                    }
+                },
+                "MethodResponses": [{
+      "ResponseModels": {
+        "application/json": "Empty"
+      },
+      "ResponseParameters": {
+        "method.response.header.Authorization": true
+      },
+      "StatusCode": 200
+    }],
+                "RequestParameters": {
+                    "method.request.path.param1": true
+                    
+                },
+                "ResourceId": {
+                    "Ref": "loginResource"
+                },
+                "RestApiId": {
+                    "Ref": "Dealmate"
+                }
+            },
+            "Type": "AWS::ApiGateway::Method"
+        },
+		"verifyResource": {
+            "Properties": {
+                "ParentId": {
+                    "Fn::GetAtt": [
+                        "Dealmate",
+                        "RootResourceId"
+                    ]
+                },
+                "PathPart": "verify",
+                "RestApiId": {
+                    "Ref": "Dealmate"
+                }
+            },
+            "Type": "AWS::ApiGateway::Resource"
+        },
+		         "verifyResourceMethodPost": {
+            "Properties": {
+                "ApiKeyRequired": false,
+                "AuthorizationType": "NONE",
+                "HttpMethod": "POST",
+                "Integration": {
+                    "IntegrationHttpMethod": "POST",
+					"PassthroughBehavior" : "WHEN_NO_MATCH",
+                    "IntegrationResponses": [	
+                        {
+                            
+                            "StatusCode": "200"
+                        }
+                        
+                    ],
+                    
+                    "Type": "AWS",
+                    "Uri": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "arn:aws:apigateway:",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                ":lambda:path/2015-03-31/functions/",
+                                {
+                                    "Fn::GetAtt": [
+                                        "Lambdanodejs",
+                                        "Arn"
+                                    ]
+                                },
+                                "/invocations"
+                            ]
+                        ]
+                    }
+                },
+                "MethodResponses": [{
+      "ResponseModels": {
+        "application/json": "Empty"
+      },
+      "ResponseParameters": {
+        "method.response.header.Authorization": true
+      },
+      "StatusCode": 200
+    }],
+                "RequestParameters": {
+                    "method.request.path.param1": true
+                    
+                },
+                "ResourceId": {
+                    "Ref": "verifyResource"
+                },
+                "RestApiId": {
+                    "Ref": "Dealmate"
+                }
+            },
+            "Type": "AWS::ApiGateway::Method"
+        },
+"APILambdaPermissionsignup": {
+            "Properties": {
+                "Action": "lambda:InvokeFunction",
+                "FunctionName": {
+                    "Ref": "Lambdanodejs"
+                },
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "arn:aws:execute-api:",
+                            {
+                                "Ref": "AWS::Region"
+                            },
+                            ":",
+                            {
+                                "Ref": "AWS::AccountId"
+                            },
+                            ":",	
+                            {
+                                "Ref": "Dealmate"
+                            },
+                            "/*/*/*"
+                        ]
+                    ]
+                }
+            },
+            "Type": "AWS::Lambda::Permission"
+        },
+		"APIDeployment": {
+		"DependsOn": [ "signupResourceMethodpost","loginResourceMethodPost","verifyResourceMethodPost", "PUT", "PUTing", "PUTdislike", "PUTdeals", "PUTLikes", "PUTshare", "PUTtags", "PUTFriends", "PUTGetDeal", "PUTUsedDao" ],
+            "Properties": {
+                "RestApiId": {
+                    "Ref": "Dealmate"
+                }
+            },
+            "Type": "AWS::ApiGateway::Deployment"
+        },
+	 "LambdaPostviews": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": "dealmateapi",
+          "S3Key": "PostDealViews-81775d1f-d81e-4df4-aa7c-161256186250.zip"
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.deals.PostViewsDao",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+    "Dealmate": {
+      "Type": "AWS::ApiGateway::RestApi",
+      "Properties": {
+	    "Description": "A test API",
+        "Name": "Dealmate"
+        }
+      },
+    "Stacklike": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "postdealviews"
+      }
+    },
+    "PUT": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ResourceId": {
+          "Ref": "Stacklike"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+		  "PassthroughBehavior" : "WHEN_NO_MATCH",
+          "IntegrationResponses": [
+            {
+              
+              "StatusCode": "200"
+            }
+          ],
+          
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "LambdaPostviews",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty"
+            },
+            "ResponseParameters": {
+              "method.response.header.Authorization": true
+            },
+            "StatusCode": 200
+          }
+        ],
+        "RequestParameters": {
+          "method.request.path.param1": true
+        }
+        }
+      
+    },
+        "APIStage": {
+            "Properties": {
+                "CacheClusterEnabled": false,
+                "DeploymentId": {
+                    "Ref": "APIDeployment"
+                },
+                "RestApiId": {
+                    "Ref": "Dealmate"
+                },
+                "StageName": "dev"
+            },
+            "Type": "AWS::ApiGateway::Stage"
+        },    
+	
+"Authorizer": {
+      "Type": "AWS::ApiGateway::Authorizer",
+      "Properties": {
+        "ProviderARNs" : [  "arn:aws:cognito-idp:us-east-1:631580520244:userpool/us-east-1_TdSvAS5lz" ],
+        "Type": "COGNITO_USER_POOLS",
+        "IdentitySource": "method.request.header.Authorization",
+        "Name": "development",
+        "RestApiId": {
+          "Ref": "Dealmate"
+        }
+      }
+    },
+	"LambdaPostdeal": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+                        "Ref": "LambdaSourceBucket"
+                    },
+          "S3Key": "PostDeal-892a6a95-b31c-4d66-99e0-26d6780b8a98.zip"
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.deals.PostDealDao",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+
+	  "APILambdaPermission1": {
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "LambdaPostviews"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    },
+		  "APILambdaPermission2": {
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "LambdaPostUsedDao"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    },
+	  "APILambdaPermission3": {
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "Lambdaposttags"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    },
+	  "APILambdaPermission4": {
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "Lambdapostshare"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    },
+	  "APILambdaPermission5": {
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "LambdaPostUsedDao"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    },
+	  "APILambdaPermission6": {
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "LambdaPostDislikes"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    },
+	  "APILambdaPermission7": {
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "LambdaPostComments"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    },
+	  "APILambdaPermission8": {
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "LambdaGetDealsbyuserId"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    },
+	  "APILambdaPermission9": {
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "LambdaFriends"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    },
+	  "APILambdaPermission10": {
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "LambdapostLikes"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    },
+	  "APILambdaPermission11": {
+	 "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "Lambdapostdeal"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "Dealmate"
+              },
+              "/*/*/*"
+            ]
+          ]
+        }
+      }
+     
+    }, 	    
+    
+       
+    
+	      "LambdaPostComments": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+                        "Ref": "LambdaSourceBucket"
+                    },
+          "S3Key": "PostDealComments-0e2523f9-c9e3-45ac-96d9-6176641d547c.zip"
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.deals.PostCommentsDao",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+  
+    "Stacking": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart" :"postdealcomments"
+      }
+    },
+    "PUTing": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ResourceId": {
+         "Ref":"Stacking"
+        },
+ "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+		  "PassthroughBehavior" : "WHEN_NO_MATCH",
+          "IntegrationResponses": [
+            {
+              
+              "StatusCode": "200"
+            }
+          ],
+          
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "LambdaPostComments",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty"
+            },
+            "ResponseParameters": {
+              "method.response.header.Authorization": true
+            },
+            "StatusCode": 200
+          }
+        ],
+        "RequestParameters": {
+          "method.request.path.param1": true
+        }
+      }
+    },
+    
+	 "LambdaPostDislikes": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+                        "Ref": "LambdaSourceBucket"
+                    },
+          "S3Key": "PostDealDislikes-42c73fd5-0c59-4dd0-a317-9ba1649d4269.zip"
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.deals.PostDislikesDao",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+    "Stackdislie": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "postdealdislikes"
+      }
+    },
+    "PUTdislike": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ResourceId": {
+         "Ref": "Stackdislie"
+        },
+        "ApiKeyRequired": "false",
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+		  "PassthroughBehavior" : "WHEN_NO_MATCH",
+          "IntegrationResponses": [
+            {
+              "StatusCode": "200"
+            }
+          ],
+          
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "LambdaPostDislikes",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty"
+            },
+            "ResponseParameters": {
+              "method.response.header.Authorization": "true"
+            },
+            "StatusCode": 200
+          }
+        ],
+        "RequestParameters": {
+          "method.request.path.param1": "true"
+        }
+      }
+    },
+   
+	   "Lambdapostdeal": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+                        "Ref": "LambdaSourceBucket"
+                    },
+          "S3Key": "PostDeal-892a6a95-b31c-4d66-99e0-26d6780b8a98.zip"		  
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.deals.PostDealDao",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+    "Stackdeals": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "postdeal"
+      }
+    },
+    "PUTdeals": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ResourceId": {
+          "Ref": "Stackdeals"
+        },
+         "ApiKeyRequired": "false",
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+		  "PassthroughBehavior" : "WHEN_NO_MATCH",
+          "IntegrationResponses": [
+            {
+              
+              "StatusCode": "200"
+            }
+          ],
+          
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "Lambdapostdeal",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty"
+            },
+            "ResponseParameters": {
+              "method.response.header.Authorization": "true"
+            },
+            "StatusCode": 200
+          }
+        ],
+        "RequestParameters": {
+          "method.request.path.param1": "true"
+        }
+      }
+    },
+   
+	 "LambdapostLikes": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+                        "Ref": "LambdaSourceBucket"
+                    },
+          "S3Key": "PostDealLikes-f0a0bc03-b217-4d83-a814-2da8c2bc9252.zip"
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.deals.PostLikesDao",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+   
+    "StackLikes": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "postdeallikes"
+      }
+    },
+    "PUTLikes": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ResourceId": {
+         "Ref": "StackLikes"
+        },
+        "ApiKeyRequired": "false",
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+		  "PassthroughBehavior" : "WHEN_NO_MATCH",
+          "IntegrationResponses": [
+            {
+              
+              "StatusCode": "200"
+            }
+          ],
+          
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "LambdapostLikes",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty"
+            },
+            "ResponseParameters": {
+              "method.response.header.Authorization": "true"
+            },
+            "StatusCode": 200
+          }
+        ],
+        "RequestParameters": {
+          "method.request.path.param1": "true"
+        }
+      }
+    },
+    
+	   "Lambdapostshare": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+                        "Ref": "LambdaSourceBucket"
+                    },
+          "S3Key": "PostDealShares-e84d4cef-c396-4926-b5a0-0b278beeb971.zip"
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.deals.PostSharesDao",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+   
+    "Stackshare": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "postdealshares"
+      }
+    },
+    "PUTshare": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ResourceId": {
+        "Ref": "Stackshare"
+        },
+        "ApiKeyRequired": "false",
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+		  "PassthroughBehavior" : "WHEN_NO_MATCH",
+          "IntegrationResponses": [
+            {
+              
+              "StatusCode": "200"
+            }
+          ],
+          
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "Lambdapostshare",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty"
+            },
+            "ResponseParameters": {
+              "method.response.header.Authorization": "true"
+            },
+            "StatusCode": 200
+          }
+        ],
+        "RequestParameters": {
+          "method.request.path.param1": "true"
+        }
+      }
+    },
+    
+	 "Lambdaposttags": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+                        "Ref": "LambdaSourceBucket"
+                    },
+          "S3Key": "PostDealTags-f07dcbee-64aa-4a0e-8fb1-0621d853f46b.zip"
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.deals.PostTagsDaos",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+    "Stacktags": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "postdealusertags"
+      }
+    },
+    "PUTtags": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ResourceId": {
+         "Ref": "Stacktags"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+		  "PassthroughBehavior" : "WHEN_NO_MATCH",
+          "IntegrationResponses": [
+            {
+              
+              "StatusCode": "200"
+            }
+          ],
+          
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "Lambdaposttags",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty"
+            },
+            "ResponseParameters": {
+              "method.response.header.Authorization": "true"
+            },
+            "StatusCode": 200
+          }
+        ],
+        "RequestParameters": {
+          "method.request.path.param1": "true"
+        }
+      }
+    },
+    
+	"LambdaFriends": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+                        "Ref": "LambdaSourceBucket"
+                    },
+          "S3Key": "ValidateFriends-c3483d1d-3fc2-456b-9bdf-6ab336a56aef.zip"
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.friends.FriendsDao",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+  
+    "StackFriends": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "friends"
+      }
+    },
+    "PUTFriends": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+           "Ref": "Dealmate"
+        },
+        "ResourceId": {
+         "Ref": "StackFriends"
+        },
+        "ApiKeyRequired": "false",
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+		  "PassthroughBehavior" : "WHEN_NO_MATCH",
+          "IntegrationResponses": [
+            {
+              
+              "StatusCode": "200"
+            }
+          ],
+          
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "LambdaFriends",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty"
+            },
+            "ResponseParameters": {
+              "method.response.header.Authorization": "true"
+            },
+            "StatusCode": 200
+          }
+        ],
+        "RequestParameters": {
+          "method.request.path.param1": "true"
+        }
+      }
+    },
+    
+	   "LambdaGetDealsbyuserId": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+                        "Ref": "LambdaSourceBucket"
+                    },
+          "S3Key": "GetDealsByUserId-c43df6b2-236b-4500-a9bd-0b7b5f3cd3ab.zip"
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.deals.GetDealsDao",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+    "StackGetDeal": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "getdealsbyuser"
+      }
+    },
+    "PUTGetDeal": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ResourceId": {
+        "Ref": "StackGetDeal"
+        },
+        "ApiKeyRequired": "false",
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+		  "PassthroughBehavior" : "WHEN_NO_MATCH",
+          "IntegrationResponses": [
+            {
+              
+              "StatusCode": "200"
+            }
+          ],
+          
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "LambdaGetDealsbyuserId",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty"
+            },
+            "ResponseParameters": {
+              "method.response.header.Authorization": "true"
+            },
+            "StatusCode": 200
+          }
+        ],
+        "RequestParameters": {
+          "method.request.path.param1": "true"
+        }
+      }
+    },
+    
+	"LambdaPostUsedDao": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+                        "Ref": "LambdaSourceBucket"
+                    },
+          "S3Key": "PostDealUsed-8ac8a643-300a-4b36-82e3-4ad95287f3e0.zip"
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "Handler": "com.dealmate.lambda.function.dao.deals.PostUsedDao",
+        "Runtime": "java8",
+        "MemorySize": 256
+      }
+    },
+    "StackUsedDao": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "Dealmate",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "postdealused"
+      }
+    },
+    "PUTUsedDao": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "Dealmate"
+        },
+        "ResourceId": {
+          "Ref": "StackUsedDao"
+        },
+        "ApiKeyRequired": "false",
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+		  "PassthroughBehavior" : "WHEN_NO_MATCH",
+          "IntegrationResponses": [
+            {
+              
+              "StatusCode": "200"
+            }
+          ],
+          
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "LambdaPostUsedDao",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty"
+            },
+            "ResponseParameters": {
+              "method.response.header.Authorization": "true"
+            },
+            "StatusCode": 200
+          }
+        ],
+        "RequestParameters": {
+          "method.request.path.param1": "true"
+        }
+      }
+    }
+   
+	}
+	}	
+    
+	
+	
+	
+	
+	
+	

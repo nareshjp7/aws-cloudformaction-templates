@@ -1,0 +1,367 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Template For EmailServer", 
+"Metadata": {
+	  "AWS::CloudFormation::Interface": {
+      "ParameterGroups": [        
+        {
+          "Label": {
+            "default": "Email Configuration"
+          },
+          "Parameters": [
+		  "EmailAddress",
+            "DomainName",            
+            "InstanceType",
+            "KeyName",
+			"VpcId",
+			"SubnetId",
+            "VpcCidrBlock",
+			"AvailabilityZones"
+			
+          ]
+        }
+      ],
+      "ParameterLabels": {       
+        "AvailabilityZones": {
+          "default": "AvailabilityZones"
+        },
+        "InstanceType": {
+          "default": "InstanceType"
+        },
+        "KeyName": {
+          "default": "KeyName"
+        },
+        "VpcId": {
+          "default": "VpcId"
+        },
+        "DomainName": {
+          "default": "DomainName"
+        },
+        
+        "SubnetId": {
+          "default": "SubnetId"
+        },
+        "VpcCidrBlock": {
+          "default": "VpcCidrBlock"
+        }
+        }
+      }},  
+  "Parameters": {    
+    "VpcId": {
+	"Description":"Please select default VpcId to create instance",
+      "Type": "AWS::EC2::VPC::Id"
+    },
+    "AvailabilityZones": {
+      "Description":"Please select AvailabilityZone to create instance",
+      "Type": "List<AWS::EC2::AvailabilityZone::Name>"
+    },
+    "KeyName": {
+      "Description":"Please select the name of an existing EC2 KeyPair to enable SSH access to the instances",
+      "Type": "AWS::EC2::KeyPair::KeyName"
+    },
+    "InstanceType": {
+      "Description":"Please select the type of EC2 instance to launch",
+      "Type": "String",
+	  	  "AllowedValues": [
+                "t2.nano",
+                "t2.micro",
+                "t2.small",
+                "t2.medium",
+                "t2.large",
+                "m3.medium",
+                "m3.large",
+                "m4.large"
+            ],
+      "Default": "t2.micro"
+    },
+    
+    "EmailAddress": {
+      "Type": "String",
+      "Description":"Please Enter the emailAddress for sending the sample test email for confirmation of successfull setup of email server (Eg:Example@gmail.com) ",
+	  "AllowedPattern": "^[\\w-\\+]+(\\.[\\w]+)*@[\\w-]+(\\.[\\w]+)*(\\.[a-z]{2,})$"
+    },
+    "SubnetId": {
+      "Type": "AWS::EC2::Subnet::Id",
+      "Description":"Please select the SubnetId in your Virtual Private Cloud (VPC),using from above VpcIds"
+    },
+    "VpcCidrBlock": {
+      "Type": "String",
+      "Description":"Please Enter the CIDR block of your Virtual Private Cloud (VPC)"
+    },
+    "DomainName": {
+      "Description":"Please Enter the Domain name of company (Eg: XXXXXX.com/in)",
+      "Type": "String"
+    }
+  },
+  "Resources": {    
+    "SecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "GroupDescription": "Enable SMTP access from the Internet and SSH/HTTP access from maintenance CIDR.",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "25",
+            "ToPort": "25",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "22",
+            "ToPort": "22",
+            "CidrIp": "0.0.0.0/0"
+          }          
+        ]
+      }
+    },    
+    "PostfixInstance": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "ImageId": {
+          "Fn::FindInMap": [
+            "AWSRegion2AMI",
+            {
+              "Ref": "AWS::Region"
+            },
+            "AMI"
+          ]
+        },
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "SubnetId": {
+          "Ref": "SubnetId"
+        },
+        "SecurityGroupIds": [
+          {
+            "Ref": "SecurityGroup"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Postfix"
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#! /bin/bash -v\n",
+                "yum update -y aws-cfn-bootstrap aws-cli\n",
+                "# Helper function\n",
+                "# Install packages\n",
+                "/opt/aws/bin/cfn-init -c default -s ",
+                {
+                  "Ref": "AWS::StackId"
+                },
+                " -r PostfixInstance ",
+                "    --region ",
+                {
+                  "Ref": "AWS::Region"
+                },
+                " || error_exit 'Failed to run cfn-init'\n",
+                "echo \"This is a test message from Email Postfix Server \" | mail -s \"Test Message \" -r no-reply@mavenstaffing.com ",
+                {
+                  "Ref": "EmailAddress"
+                },
+                "\n",
+                "# All is well so signal success\n"
+              ]
+            ]
+          }
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Init": {
+          "configSets": {
+            "default": [
+              "install_postfix",
+              "setup_and_run_postfix"
+            ]
+          },
+          "install_postfix": {
+            "packages": {
+              "yum": {
+                "postfix": [
+                  {
+                    "Fn::FindInMap": [
+                      "StackConfig",
+                      "Postfix",
+                      "Version"
+                    ]
+                  }
+                ],
+                "mailx": []
+              }
+            },
+            "services": {
+              "sysvinit": {
+                "sendmail": {
+                  "enabled": "false",
+                  "ensureRunning": "false"
+                }
+              }
+            }
+          },
+          "setup_and_run_postfix": {
+            "files": {
+              "/etc/postfix/main.cf": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "queue_directory = /var/spool/postfix\n",
+                      "command_directory = /usr/sbin\n",
+                      "daemon_directory = /usr/libexec/postfix\n",
+                      "data_directory = /var/lib/postfix\n",
+                      "mail_owner = postfix\n",
+                      "myhostname = mail.",
+                      {
+                        "Ref": "DomainName"
+                      },
+                      "\n",
+                      "mydomain = ",
+                      {
+                        "Ref": "DomainName"
+                      },
+                      "\n",
+                      "myorigin = $mydomain\n",
+                      "inet_interfaces = all\n",
+                      "inet_protocols = all\n",
+                      "mydestination = $myhostname, localhost.$mydomain, localhost\n",
+                      "unknown_local_recipient_reject_code = 550\n",
+                      "mynetworks = ",
+                      {
+                        "Ref": "VpcCidrBlock"
+                      },
+                      " , 127.0.0.0/8\n",
+                      "relay_domains = $mydestination, $mydomain\n",
+                      "alias_maps = hash:/etc/aliases\n",
+                      "alias_database = hash:/etc/aliases\n",
+                      "smtpd_banner = $myhostname ESMTP unknown\n",
+                      "debug_peer_level = 2\n",
+                      "debugger_command =\n",
+                      "\t PATH=/bin:/usr/bin:/usr/local/bin:/usr/X11R6/bin\n",
+                      "\t ddd $daemon_directory/$process_name $process_id & sleep 5\n",
+                      "sendmail_path = /usr/sbin/sendmail.postfix\n",
+                      "newaliases_path = /usr/bin/newaliases.postfix\n",
+                      "mailq_path = /usr/bin/mailq.postfix\n",
+                      "setgid_group = postdrop\n",
+                      "html_directory = no\n",
+                      "manpage_directory = /usr/share/man\n",
+                      "sample_directory = /usr/share/doc/postfix-",
+                      {
+                        "Fn::FindInMap": [
+                          "StackConfig",
+                          "Postfix",
+                          "Version"
+                        ]
+                      },
+                      "/samples\n",
+                      "readme_directory = /usr/share/doc/postfix-",
+                      {
+                        "Fn::FindInMap": [
+                          "StackConfig",
+                          "Postfix",
+                          "Version"
+                        ]
+                      },
+                      "/README_FILES\n",
+                      "transport_maps = hash:/etc/postfix/transport\n"
+                    ]
+                  ]
+                },
+                "mode": "000644",
+                "owner": "root",
+                "group": "root"
+              }
+            },
+            "commands": {
+              "postmap": {
+                "command": "/usr/sbin/postmap /etc/postfix/transport"
+              }
+            },
+            "services": {
+              "sysvinit": {
+                "postfix": {
+                  "enabled": "true",
+                  "ensureRunning": "true"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "Mappings": {
+    "AWSRegion2AMI": {
+      "us-east-1": {
+       "AMI": "ami-b73b63a0"
+     },
+     "us-east-2": {
+       "AMI": "ami-58277d3d"
+     },
+     "us-west-2": {
+       "AMI": "ami-5ec1673e"
+     },
+     "us-west-1": {
+       "AMI": "ami-23e8a343"
+     },
+     "eu-west-1": {
+       "AMI": "ami-9398d3e0"
+     },
+     "eu-central-1": {
+       "AMI": "ami-f9619996"
+     },
+     "ap-southeast-1": {
+       "AMI": "ami-b953f2da"
+     },
+     "ap-northeast-2": {
+       "AMI": "ami-983ce8f6"
+     },
+     "ap-northeast-1": {
+       "AMI": "ami-0c11b26d"
+     },
+     "ap-southeast-2": {
+       "AMI": "ami-db704cb8"
+     },
+     "ap-south-1": {
+       "AMI": "ami-34b4c05b"
+     },
+     "sa-east-1": {
+       "AMI": "ami-97831ffb"
+	},
+	"ca-central-1": {
+       "AMI": "ami-b48b39d0"
+	},
+	"eu-west-2":{
+         "AMI" : "ami-d6cbc1b2"
+	}
+    },
+    "StackConfig": {
+      "Postfix": {
+        "Version": "2.6.6"
+      }
+    }
+  },
+  "Outputs": {    
+    "PostfixInstanceDnsName": {
+      "Value": {
+        "Fn::GetAtt": [
+          "PostfixInstance",
+          "PublicDnsName"
+        ]
+      },
+      "Description": "public DNS name of the new PostfixInstance"
+    }
+  }
+}

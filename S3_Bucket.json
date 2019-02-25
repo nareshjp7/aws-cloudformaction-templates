@@ -1,0 +1,100 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Template For S3Bucket",
+  "Metadata": {
+    "AWS::CloudFormation::Interface": {
+      "ParameterGroups": [
+        {
+          "Label": {
+            "default": "S3 bucket Configuration"
+          },
+          "Parameters": [
+            "UseExistingBucket",
+            "S3BucketName"
+          ]
+        }
+      ],
+      "ParameterLabels": {
+        "S3BucketName": {
+          "default": "S3BucketName"
+        },
+        "UseExistingBucket": {
+          "default": "UseExistingBucket"
+        }
+      }
+    }
+  },
+  "Parameters": {
+    "UseExistingBucket": {
+      "Description": "Please select any one,(True/False),If you want to create new bucket choose FALSE",
+      "Type": "String",
+      "Default": "false",
+      "AllowedValues": [
+        "true",
+        "false"
+      ]
+    },
+    "S3BucketName": {
+      "Description": "Please enter the Unique Bucket name should be within 8 characters, Leave the bucket name empty to create bucket with default random name",
+      "Type": "String",
+      "AllowedPattern": "[a-z0-9]*"
+    }
+  },
+  "Conditions": {
+    "BucketExists": {
+      "Fn::Equals": [
+        {
+          "Ref": "UseExistingBucket"
+        },
+        "false"
+      ]
+    },
+    "BucketNameEmpty": {
+      "Fn::Equals": [
+        {
+          "Ref": "S3BucketName"
+        },
+        ""
+      ]
+    },
+    "BucketExistsAndBucketNameEmpty": {
+      "Fn::And": [
+        {
+          "Condition": "BucketExists"
+        },
+        {
+          "Condition": "BucketNameEmpty"
+        }
+      ]
+    },
+    "BucketExistsAndBucketNameNotEmpty": {
+      "Fn::And": [
+        {
+          "Condition": "BucketExists"
+        },
+        {
+          "Fn::Not": [
+            {
+              "Condition": "BucketNameEmpty"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Resources": {
+    "MoxieitFolderWithUserBucketName": {
+      "Type": "AWS::S3::Bucket",
+      "Condition": "BucketExistsAndBucketNameNotEmpty",
+      "Properties": {
+        "BucketName": {
+          "Ref": "S3BucketName"
+        }
+      }
+    },
+    "MoxieitFolderWithOutUserBucketName": {
+      "Type": "AWS::S3::Bucket",
+      "Condition": "BucketExistsAndBucketNameEmpty"
+    }
+  }
+}

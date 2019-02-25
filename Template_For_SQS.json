@@ -1,0 +1,21 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Template For AutoScalingGroups",
+  
+   "Parameters": {
+      "SQSQueueName" :{
+      "Description": " Please Enter the Name for a Queue",
+      "Type":"String"
+ }
+ },
+ "Resources": {
+ "Queue1" : {
+   "Type" : "AWS::SQS::Queue",
+   "Properties" : {
+      "QueueName":  { "Ref" :"SQSQueueName" },
+      "VisibilityTimeout": 30 ,
+	  "MessageRetentionPeriod" : 1209600
+   }
+}
+}
+}

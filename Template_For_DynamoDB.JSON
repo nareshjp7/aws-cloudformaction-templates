@@ -1,0 +1,208 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+"Description": "AWS CloudFormation Template DynamoDb",
+ "Metadata": {
+    "AWS::CloudFormation::Interface": {
+      "ParameterGroups":[
+	  {
+          "Label": {
+            "default": "DynamoDB Configuration"
+          },
+          "Parameters": [
+            "ReadCapacityUnits",
+			"WriteCapacityUnits"
+          ]
+        }],		
+		"ParameterLabels": {
+		"ReadCapacityUnits" :{
+		"default":"ReadCapacityUnits"
+		},
+		"WriteCapacityUnits":{
+		"default":"WriteCapacityUnits"
+		}
+	  }	
+	}
+	},
+  "Parameters": {
+    "ReadCapacityUnits": {
+      "Description": "Please Enter Provisioned Read throughput",
+      "Type": "Number",
+      "Default": "500",
+      "MinValue": "5",
+      "MaxValue": "10000",
+      "ConstraintDescription": "must be between 5 and 10000"
+    },
+
+    "WriteCapacityUnits": {
+      "Description": "Please Enter Provisioned Write throughput",
+      "Type": "Number",
+      "Default": "1000",
+      "MinValue": "5",
+      "MaxValue": "10000",
+      "ConstraintDescription": "must be between 5 and 10000"
+    }
+  },
+  "Resources": {
+    "TableOfUsers": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "UserId", "AttributeType": "S" }
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "UserId", "KeyType": "HASH" }
+          
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+	"TableName" : "Users"
+        
+      }
+    },
+	"TableOfAudience": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "UserId", "AttributeType": "S" },
+          { "AttributeName": "List", "AttributeType": "S" }
+          
+        ],
+        "KeySchema": [
+          { "AttributeName": "UserId", "KeyType": "HASH" },
+          
+		  { "AttributeName": "List", "KeyType": "RANGE" }
+		  
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+		"TableName" : "Audience"   
+      }
+    },
+	"TableOfAudienceList": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "EmailId", "AttributeType": "S" },
+		 
+          { "AttributeName": "Id", "AttributeType": "S" }
+		  
+        ],
+        "KeySchema": [
+          { "AttributeName": "Id", "KeyType": "HASH" },
+          
+		  { "AttributeName": "EmailId", "KeyType": "RANGE" }
+		  
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },        
+		"TableName" : "AudienceList"       
+      }
+    },	
+	"TableOfUserReport": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          { "AttributeName": "AudienceMail", "AttributeType": "S" },
+		  { "AttributeName": "CampaignUrl", "AttributeType": "S" }
+          
+		  ],
+        "KeySchema": [
+          { "AttributeName": "CampaignUrl", "KeyType": "HASH" },
+          { "AttributeName": "AudienceMail", "KeyType": "RANGE" }
+		  
+		  
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },
+        
+		"TableName" : "UserReport"
+        
+      },
+	  "DependsOn" : "TableOfUsers"
+    },	
+	"TableOfReport": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+		
+		{ "AttributeName": "AudienceMail", "AttributeType": "S" },		
+          
+		  { "AttributeName": "CampaignUrl", "AttributeType": "S" }
+          	  
+		  ],
+        "KeySchema": [
+          { "AttributeName": "CampaignUrl", "KeyType": "HASH" },          
+		  
+		  { "AttributeName": "AudienceMail", "KeyType": "RANGE" }
+		  
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },
+        
+	"TableName" : "Report"
+ 
+      },
+	  "DependsOn" : "TableOfAudienceList"
+    },	
+	"TableOfUsersJwt": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+		
+          { "AttributeName": "Token", "AttributeType": "S" }
+		 
+		  ],
+        "KeySchema": [
+          { "AttributeName": "Token", "KeyType": "HASH" }
+          
+		  
+		  
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacityUnits" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacityUnits" }
+        },
+        
+	"TableName" : "Users_Jwt"
+        
+      }
+    }	
+  }, 
+   "Outputs" : {
+     "TableName1" : {
+       "Value" : {"Ref" : "TableOfUsers"},
+       "Description" : "Name of the newly created DynamoDB table1"
+     },
+	 "TableName2" : {
+       "Value" : {"Ref" : "TableOfAudience"},
+       "Description" : "Name of the newly created DynamoDB table2"
+     },
+	 "TableName3" : {
+       "Value" : {"Ref" : "TableOfAudienceList"},
+       "Description" : "Name of the newly created DynamoDB table3"
+     },
+	 "TableName4" : {
+       "Value" : {"Ref" : "TableOfUserReport"},
+       "Description" : "Name of the newly created DynamoDB table4"
+     },
+	 "TableName5" : {
+       "Value" : {"Ref" : "TableOfReport"},
+       "Description" : "Name of the newly created DynamoDB table5"
+     },
+	 "TableName6" : {
+       "Value" : {"Ref" : "TableOfUsersJwt"},
+       "Description" : "Name of the newly created DynamoDB table6"
+     }	 
+   }
+}

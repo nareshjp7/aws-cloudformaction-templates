@@ -1,0 +1,1073 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Template For ApplicationServer",
+  "Metadata": {
+    "AWS::CloudFormation::Interface": {
+      "ParameterGroups": [
+        {
+          "Label": {
+            "default": "Application Server Configuration "
+          },
+          "Parameters": [
+            "KeyName",
+            "InstanceType",
+            "VpcId",
+            "AvailabilityZones"
+          ]
+        },
+        {
+          "Label": {
+            "default": "Git Configuration"
+          },
+          "Parameters": [
+            "BranchName",
+            "Username",
+            "Password"
+          ]
+        }
+
+      ],
+      "ParameterLabels": {
+        "BranchName": {
+          "default": "BranchName"
+        },
+        "Username": {
+          "default": "Username"
+        },
+        "Password": {
+          "default": "Password"
+        },
+        "Availabilityzones": {
+          "default": "Availabilityzones"
+        },
+        "InstanceType": {
+          "default": "InstanceType"
+        },
+        "KeyName": {
+          "default": "KeyName"
+        },
+        "VpcId": {
+          "default": "VpcId"
+        }
+		
+      }
+    }
+  },
+  "Parameters": {
+  
+    "AvailabilityZones": {
+      "Description": " Please select AvailabilityZone to create instance",
+      "Type": "List<AWS::EC2::AvailabilityZone::Name>"
+    },
+    "KeyName": {
+      "Description": "Please select the name of an existing EC2 KeyPair to enable SSH access to the instances",
+      "Type": "AWS::EC2::KeyPair::KeyName"
+    },
+    "InstanceType": {
+      "Description": "Please select the type of EC2 instance to launch",
+      "Type": "String",
+      "AllowedValues": [
+        "t2.nano",
+        "t2.micro",
+        "t2.small",
+        "t2.medium",
+        "t2.large",
+        "m3.medium",
+        "m3.large",
+        "m4.large"
+      ],
+      "Default": "t2.micro"
+    },
+    "VpcId": {
+      "Description": "Please select default VpcId to create instance",
+      "Type": "AWS::EC2::VPC::Id"
+    },
+    "LambdaSourceBucketName": {
+      "Description": "Please enter the Unique Bucket name should be within 8 characters, Leave the bucket name empty to create bucket with default random name",
+      "Type": "String",
+      "AllowedPattern": "[a-z0-9]*"
+    },
+    "BranchName": {
+      "Description": "Please Enter the Branchname for GitHub",
+      "Type": "String"
+    },
+    "Username": {
+      "Description": "Please Enter the Username for GitHub",
+      "Type": "String",
+      "Default": "kkommineni123",
+      "NoEcho": "true"
+    },
+    "Password": {
+      "Description": "Please Enter the Password for GitHub, If your password contains @ please replace the value with %40 ",
+      "Type": "String",
+      "Default": "Kumarbabu123%40",
+      "NoEcho": "true"
+    },
+	"Username1": {
+      "Description": "Please Enter the Username for GitHub",
+      "Type": "String",
+      "Default": "jvenkatanagaraju",
+      "NoEcho": "true"
+    },
+    "Password1": {
+      "Description": "Please Enter the Password for GitHub, If your password contains @ please replace the value with %40 ",
+      "Type": "String",
+      "Default": "venkat123",
+      "NoEcho": "true"
+    },
+	"PoolName": {
+			"Type": "String",			
+			"Description": "Please Enter The Name of the Cognito UserPool"
+		},
+		"UnusedAccountValidityDays": {
+			"Type": "Number",
+"Default": "7",			
+			"Description": "Please Enter The Name of the UnusedAccountValidityDays"
+		},
+		"MfaConfiguration": {
+			"Type": "String",
+			"Default": "OFF",
+			"AllowedValues": [ "OFF", "OPTIONAL", "ON" ],
+			"Description": "Please Enter The Name of the MFAConfiguration"
+		},
+		"MinimumLengthForPasswordPolicy": {
+			"Type": "String",
+"Default": "8",			
+			"Description": "Please Enter The Name of the MinimumLength for PassWord greater than 6"
+		},
+		"AutoVerifiedAttributes": {
+			"Type": "CommaDelimitedList",			
+		  "Default": "phone_number,email",
+			"Description": "Please Enter The Name of the AutoVerifiedAttributes"
+		},
+		"DeviceOnlyRememberedOnUserPrompt": {
+			"Type": "String",
+			"Default": "true",
+			"AllowedValues": [ "true",
+          "false" ],
+			"Description": "Please Enter The Name of the DeviceOnlyRememberedOnUserPrompt"
+		},
+		"AllowAdminCreateUserOnly": {
+			"Type": "String",
+			"Default": "false",
+			"AllowedValues": [ "true",
+          "false" ],
+			"Description": "Please Enter The Name of the AllowAdminCreateUserOnly"
+		},
+		"ChallengeRequiredOnNewDevice1": {
+			"Type": "String",
+			"Default": "false",
+			"AllowedValues": [ "true",
+          "false" ],
+			"Description": "Please Enter The Name of the ChallengeRequiredOnNewDevice"
+		},
+		"ExternalId": {
+			"Type": "String",
+			"Default": "15861f6f-74bb-474f-b4e5-9bf7ec50b999",
+			"Description": "Please Enter The Name of the ExternalId"
+		},
+		"UserPoolClientName": {
+			"Type": "String",
+			"Default": "DealMate",
+			"Description": "Please Enter The Name of the UserPoolClient"
+		},
+			"UseExistingBucket": {
+	"Description":"Please select any one,(True/False),If you want to create new bucket choose FALSE",
+      "Type": "String",
+      "Default": "false",
+      "AllowedValues": [
+        "true",
+        "false"
+      ]
+    }
+    },
+	"Conditions": {
+  "BucketExists": {
+      "Fn::Equals": [
+        {
+          "Ref": "UseExistingBucket"
+        },
+        "false"
+      ]
+    },
+	"BucketExistsTrue": {
+      "Fn::Equals": [
+        {
+          "Ref": "UseExistingBucket"
+        },
+        "true"
+      ]
+    },
+    "BucketNameEmpty": {
+      "Fn::Equals": [
+        {
+          "Ref": "LambdaSourceBucketName"
+        },
+        ""
+      ]
+    },
+    "BucketExistsAndBucketNameEmpty": {
+      "Fn::And": [
+        {
+          "Condition": "BucketExists"
+        },
+        {
+          "Condition": "BucketNameEmpty"
+        }
+      ]
+    },
+    "BucketExistsAndBucketNameNotEmpty": {
+      "Fn::And": [
+        {
+          "Condition": "BucketExists"
+        },
+        {
+          "Fn::Not": [
+            {
+              "Condition": "BucketNameEmpty"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Resources": {
+  "MoxieitFolderWithUserBucketName": {
+      "Type": "AWS::S3::Bucket",
+      "Condition": "BucketExistsAndBucketNameNotEmpty",
+      "Properties": {
+        "BucketName": {
+          "Ref": "LambdaSourceBucketName"
+        }
+      }
+    },
+	"MoxieitFolderWithOutUserBucketName": {
+      "Type": "AWS::S3::Bucket",
+      "Condition": "BucketExistsAndBucketNameEmpty"
+    },
+  "CognitoUserPool": {
+ 
+      "Type": "Custom::CognitoUserPool",
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "CognitoUserPoolFunction",
+            "Arn"
+          ]
+        },        
+        "PoolName": { "Ref" : "PoolName" },
+        "AliasAttributes": [
+          "phone_number",
+          "email"		  
+        ],		
+		"AutoVerifiedAttributes": { "Ref" : "AutoVerifiedAttributes" },
+		
+		"Policies": { 
+      "PasswordPolicy": { 
+         "MinimumLength": { "Ref" : "MinimumLengthForPasswordPolicy" }
+		 
+         
+      }
+   },
+	"PasswordPolicy": {
+            "MinimumLength": {
+              "Ref": "MinimumLengthForPasswordPolicy"
+            }
+			
+        },   
+		"AdminCreateUserConfig": {
+			"AllowAdminCreateUserOnly": { "Ref" : "AllowAdminCreateUserOnly" },
+			"InviteMessageTemplate": {
+			"EmailMessage": "Your username is {username} and temporary password is {####}.",
+			"EmailSubject": "Your temporary password",
+			"SMSMessage": "Your username is {username} and temporary password is {####}."
+      },
+      "UnusedAccountValidityDays": { "Ref" : "UnusedAccountValidityDays" }
+		},		
+		"MfaConfiguration": { "Ref" : "MfaConfiguration" },
+                
+        "LambdaConfig": {
+          "CustomMessage": "CustomMessage",
+          "PostAuthentication": "PostAuthentication",
+          "PostConfirmation": "PostConfirmation",
+          "PreAuthentication": "PreAuthentication",
+          "PreSignUp": "PreSignUp"
+        },
+		"DeviceConfiguration": { 
+      "ChallengeRequiredOnNewDevice": { "Ref" : "ChallengeRequiredOnNewDevice1" },
+      "DeviceOnlyRememberedOnUserPrompt": { "Ref" : "DeviceOnlyRememberedOnUserPrompt" }
+   },
+			
+   "Schema": [    	
+      { 
+         "AttributeDataType": "Number",		 
+         "Name"  : "postalcode",		 	 
+         "NumberAttributeConstraints": { 
+            "MaxValue": "1000000",
+            "MinValue": "0"
+         }         
+	  },
+	   { 
+         "AttributeDataType": "String",		 
+         "Name"  : "family_name",		 
+         "StringAttributeConstraints": { 
+            "MaxLength": "2048",
+            "MinLength": "0"
+         }         
+	  },
+	  { 
+         "AttributeDataType": "String",		 
+         "Name"  : "given_name",		 
+         "StringAttributeConstraints": { 
+            "MaxLength": "2048",
+            "MinLength": "0"
+         }         
+	  },
+	  { 
+         "AttributeDataType": "String",		 
+         "Name"  : "email",
+		
+         "StringAttributeConstraints": { 
+            "MaxLength": "2048",
+            "MinLength": "0"
+         }         
+	  },
+	  { 
+         "AttributeDataType": "String",
+			 
+         "Name"  : "phone_number",		  
+         "StringAttributeConstraints": {
+                    "MinLength": "0",
+                    "MaxLength": "2048"
+                }         
+	  }
+	  
+		
+   ],   
+ 
+
+   "EmailConfiguration": { 
+      "ReplyToEmailAddress": "alukka@mavenstaffing.in",
+      "SourceArn": "arn:aws:iam::631580520244:role/service-role/PoolName-SMS-Role"
+   },
+   "SmsAuthenticationMessage": "SmsAuthenticationMessage",
+   "SmsConfiguration": { 
+      "ExternalId": { "Ref" : "ExternalId"},
+      "SnsCallerArn":  {
+          "Fn::GetAtt": [
+            "CognitoUserPoolSMSRole",
+            "Arn"
+          ]
+        }
+   },   
+   "SmsVerificationMessage": "Your Deal Mate verification code is {####}."  
+
+}
+},
+"CognitoUserPoolClient": {
+  "Type": "Custom::CreateUserPoolClient",
+  "DependsOn" : "CognitoUserPool",
+  "Properties": {
+	"ServiceToken": {
+          "Fn::GetAtt": [
+            "CognitoUserPoolClientFunction",
+            "Arn"
+          ]
+        },
+	"ClientName": { "Ref" : "UserPoolClientName" },
+	"GenerateSecret": true,
+	"UserPoolId": { "Fn::GetAtt" : [ "CognitoUserPool", "Id" ] },
+	"RefreshTokenValidity": 30
+	}
+	},     
+   
+    "CognitoUserPoolFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": {
+            "Fn::Join": [
+              "",
+              [
+                "var response = require(\"cfn-response\");",
+                "var AWS = require(\"aws-sdk\");",
+                "var cognito = new AWS.CognitoIdentityServiceProvider();",
+                "exports.handler = function (event, context) {",
+                "  var responseStatus = \"FAILED\";",
+                "  if (event.RequestType == \"Delete\") {",
+                "    cognito.listUserPools({ MaxResults: 60 }, function (err, data) {",
+                "      if (err) {",
+                "        console.log(err, err.stack);",
+                "        response.send(event, context, responseStatus);",
+                "      }",
+                "      else {",
+                "        console.log(data);",
+                "        var userPool = {};",
+                "        for(var i = 0; i < data.UserPools.length; i++) {",
+                "          if(data.UserPools[i].Name == event.ResourceProperties.PoolName) {",
+                "            userPool = data.UserPools[i];",
+                "            break;     ",
+                "          }",
+                "        }",
+                "        cognito.deleteUserPool({",
+                "          UserPoolId: userPool.Id",
+                "        }, function (err, data) {",
+                "          if (err) {",
+                "            console.log(err, err.stack);",
+                "            response.send(event, context, responseStatus);",
+                "          }",
+                "          response.send(event, context, \"SUCCESS\");",
+                "        });",
+                "      }",
+                "    });",
+                "  } else if (event.RequestType == \"Update\") {",
+                "    responseStatus = \"SUCCESS\";",
+                "    response.send(event, context, responseStatus);",
+                "  } else {",
+                "    var responseData = {};",
+				"    var myObj = event.ResourceProperties.PasswordPolicy;",
+				"    console.log(\"printing myObj 1\" , myObj);",
+				"    myObj[\"RequireLowercase\"] = true;",
+				"    myObj[\"RequireNumbers\"] = true;",
+				"    myObj[\"RequireSymbols\"] = false;",
+				"    myObj[\"RequireUppercase\"] = true;",
+				"    var myMainObj = {};",
+				"    myMainObj[\"PasswordPolicy\"] = myObj;",
+				"    console.log(\"printing myMainObj 1\" , myMainObj);",
+				"    var myObjj = event.ResourceProperties.Schema;",
+				"    console.log(\"printing myMainObjj 1\" , myObjj);",
+				"    myObjj[0][\"DeveloperOnlyAttribute\"] = true;",
+				"    myObjj[0][\"Mutable\"] = true;",
+				"    myObjj[0][\"Required\"] = false;",
+				"    myObjj[1][\"DeveloperOnlyAttribute\"] = false;",
+				"    myObjj[1][\"Mutable\"] = true;",
+				"    myObjj[1][\"Required\"] = true;",
+				"    myObjj[2][\"DeveloperOnlyAttribute\"] = false;",
+				"    myObjj[2][\"Mutable\"] = true;",
+				"    myObjj[2][\"Required\"] = true;",				
+				"    console.log(\"printing myMainObjj 1\" , myObjj);",
+				"    var myObj1 = event.ResourceProperties.DeviceConfiguration;",				
+				"    console.log(\"printing myMainObj1 1\" , myObj1);",				
+				"     if  (myObj1[\"ChallengeRequiredOnNewDevice\"] = 'true'){",
+				"    myObj1[\"ChallengeRequiredOnNewDevice\"] = true;",				
+				"}",
+				"else {",
+				"    myObj1[\"ChallengeRequiredOnNewDevice\"] = false;",				  
+			    "}",								
+				"     if  (myObj1[\"DeviceOnlyRememberedOnUserPrompt\"] = 'true'){",
+				"    myObj1[\"DeviceOnlyRememberedOnUserPrompt\"] = true;",				
+				"}",
+				"else {",
+				"    myObj1[\"DeviceOnlyRememberedOnUserPrompt\"] = false;",				  
+			    "}",
+				"    var myObj2 = event.ResourceProperties.AdminCreateUserConfig;",				
+				"    console.log(\"printing myMainObj1 1\" , myObj2);",				
+				"     if  (myObj2[\"AllowAdminCreateUserOnly\"] = 'true'){",
+				"    myObj2[\"AllowAdminCreateUserOnly\"] = true;",				
+				"}",
+				"else {",
+				"    myObj2[\"AllowAdminCreateUserOnly\"] = false;",				  
+			    "}",
+                "    cognito.createUserPool({",
+                "      PoolName: event.ResourceProperties.PoolName,",	
+                "      AliasAttributes: event.ResourceProperties.AliasAttributes,",
+                "      MfaConfiguration: event.ResourceProperties.MfaConfiguration,",
+                "      AutoVerifiedAttributes: event.ResourceProperties.AutoVerifiedAttributes,",
+                "      SmsVerificationMessage: event.ResourceProperties.SmsVerificationMessage,",
+                "      SmsConfiguration: event.ResourceProperties.SmsConfiguration,",
+                "      Schema: event.ResourceProperties.Schema,",
+                "      AdminCreateUserConfig: event.ResourceProperties.AdminCreateUserConfig,",
+				"      DeviceConfiguration: event.ResourceProperties.DeviceConfiguration,",
+				"      Policies: myMainObj",
+                "     }, function (err, data) {",
+                "      if (err) {",
+                "        console.log(err, err.stack);",
+                "      }",
+                "      else {",
+                "        responseStatus = \"SUCCESS\";",
+                "        console.log(data);",
+                "        responseData = { Id: data.UserPool.Id };",
+                "      }",
+                "      response.send(event, context, responseStatus, responseData);",
+                "    });",
+                "  }",
+                "};"
+              ]
+            ]
+          }
+        },
+        "Description": "CognitoUserPoolFunction Function",
+        "Handler": "index.handler",
+        "MemorySize": 128,
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs4.3",
+        "Timeout": 30
+      }
+    },
+  "CognitoUserPoolClientFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": {
+            "Fn::Join": [
+              "",
+              [
+                "var response = require(\"cfn-response\");",				
+                "var AWS = require(\"aws-sdk\");",				
+                "var cognito = new AWS.CognitoIdentityServiceProvider();",
+                "exports.handler = function (event, context) {",                    
+                "  var responseStatus = \"FAILED\";",                
+                "  if (event.RequestType == \"Delete\") {",
+                "    cognito.listUserPoolClients({ MaxResults: 60 }, function (err, data) {",
+                "      if (err) {",
+                "        console.log(err, err.stack);",
+                "        response.send(event, context, responseStatus);",
+                "      }",
+                "      else {",
+                "        console.log(data);",
+                "        var userPoolClient = {};",
+                "        for(var i = 0; i < data.UserPoolClients.length; i++) {",
+                "          if(data.UserPoolClients[i].Name == event.ResourceProperties.ClientName) {",
+                "            userPoolClient = data.UserPoolClients[i];",
+                "            break;     ",
+                "          }",
+                "        }",
+                "        cognito.deleteUserPoolClient({",
+                "          UserPoolClientId: userPoolClient.Id",
+                "        }, function (err, data) {",
+                "          if (err) {",
+                "            console.log(err, err.stack);",
+                "            response.send(event, context, responseStatus);",
+                "          }",
+                "          response.send(event, context, \"SUCCESS\");",
+                "        });",
+                "      }",
+                "    });",
+                "  } else if (event.RequestType == \"Update\") {",
+                "    responseStatus = \"SUCCESS\";",
+                "    response.send(event, context, responseStatus);",
+                "  } else {",
+                "    var responseData = {};",
+                "    cognito.createUserPoolClient({",				
+                "      ClientName: event.ResourceProperties.ClientName,",				
+                "      UserPoolId: event.ResourceProperties.UserPoolId,",				
+				"      RefreshTokenValidity: event.ResourceProperties.RefreshTokenValidity",				
+                
+				"     }, function (err, data) {",
+                "      if (err) {",
+                "        console.log(err, err.stack);",
+                "      }",
+                "      else {",
+                "        responseStatus = \"SUCCESS\";",
+                "        console.log(data);",
+				"        responseData = { ClientId: data.UserPoolClient.ClientId };",
+                "      }",
+                "      response.send(event, context, responseStatus, responseData);",
+                "    });",			
+                "  }",
+                "};"
+              ]
+            ]
+          }
+        },
+        "Description": "CognitoUserPoolFunction Function",
+        
+        "Handler": "index.handler",
+        "MemorySize": 128,
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs4.3",
+        "Timeout": 30
+      }
+    },      
+    "LambdaExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+			  
+			}
+          ]
+        },
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "root",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "arn:aws:logs:*:*:*"
+                },
+				{
+            "Effect": "Allow",
+            "Action": [
+                "sns:publish"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "*"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+	"CognitoUserPoolSMSRole": {
+ 			"Type": "AWS::IAM::Role",
+ 			"Properties": {
+ 				"AssumeRolePolicyDocument": {
+ 					"Version": "2012-10-17",
+ 					"Statement": [
+ 						{
+ 							"Effect": "Allow",
+ 							"Principal": {
+ 								"Service": "cognito-idp.amazonaws.com"
+ 							},
+ 							"Action": "sts:AssumeRole",
+ 							"Condition": {
+								"StringEquals": {
+								"sts:ExternalId": { 
+							"Ref" : "ExternalId"
+							}
+						}
+            }
+ 						}
+		
+				]
+        },
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "root",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [                
+				{
+            "Effect": "Allow",
+            "Action": [
+                "sns:publish"
+            ],
+            "Resource": [
+                "*"
+            ]
+        }           
+          
+        ]
+      }
+    }
+	]
+    }},
+     
+	    "RootRole": {
+         "Type": "AWS::IAM::Role",
+         "Properties": {
+            "AssumeRolePolicyDocument": {
+               "Version" : "2012-10-17",
+               "Statement": [ {
+                  "Effect": "Allow",
+                  "Principal": {
+                     "Service": [ "ec2.amazonaws.com" ]
+                  },
+                  "Action": [ "sts:AssumeRole" ]
+               } ]
+            },
+            "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "root",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "arn:aws:logs:*:*:*"
+                }
+                
+              ]
+            }
+          },
+                    {
+            "PolicyName": "S3BucketPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+      "Effect": "Allow",
+      "Action": "s3:ListAllMyBuckets",
+      "Resource": "arn:aws:s3:::*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetBucketLocation"
+      ],
+      "Resource": {
+        "Fn::Join": [
+                                  "",
+                                  [
+                                     "arn:aws:s3:::",
+								   {"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{"Fn::If" :["BucketNameEmpty",{"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] }
+									]]
+    }},
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": { "Fn::Join": [
+                                  "",
+                                  [
+                                     "arn:aws:s3:::",
+								    {"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] },
+									"/","*" ]]
+
+    }}]}},
+          {
+            "PolicyName": "adminaccess",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ]
+			}
+			},
+             
+      "RootInstanceProfile": {
+         "Type": "AWS::IAM::InstanceProfile",
+         "Properties": {
+            "Path": "/",
+            "Roles": [ {
+               "Ref": "RootRole"
+            } ]
+         }
+      },   
+
+    
+    "SecurityGroups": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "GroupDescription": "Enable SMTP access from the Internet and SSH/HTTP access from maintenance CIDR.",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "80",
+            "ToPort": "80",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "22",
+            "ToPort": "22",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "8080",
+            "ToPort": "8080",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "AppServer": {
+	
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "SecurityGroupIds": [
+          {
+            "Ref": "SecurityGroups"
+          }
+        ],
+        "IamInstanceProfile": {
+          "Ref": "RootInstanceProfile"
+        },
+        "AvailabilityZone": {
+          "Fn::Select": [
+            "0",
+            {
+              "Ref": "AvailabilityZones"
+            }
+          ]
+        },
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "ImageId": {
+          "Fn::FindInMap": [
+            "AWSRegion2AMI",
+            {
+              "Ref": "AWS::Region"
+            },
+            "AMI"
+          ]
+        },
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -xe\n",
+                "yum install -y aws-cfn-bootstrap\n",
+				"date > /home/ec2-user/starttime\n",     
+      
+                "# Install the files and packages from the metadata\n",
+                "/opt/aws/bin/cfn-init -v ",
+                "         --stack ",
+                {
+                  "Ref": "AWS::StackName"
+                },
+                "         --resource AppServer ",
+                "         --configsets Install ",
+                "    --region ",
+                {
+                  "Ref": "AWS::Region"
+                },
+                " || error_exit 'Failed to run cfn-init'\n",                 
+                "sudo su - \n",
+                "cd /home/ec2-user \n",
+                "chmod 777 deployScripts\n",
+                "/home/ec2-user/deployScripts \n"
+              ]
+            ]
+          }
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "AppServer"
+          }
+        ]
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Init": {
+          "configSets": {
+            "Install": [
+              "Install"
+            ]
+          },
+          "Install": {
+            "sources": {
+              "/usr/local": "http://awsu-amm.s3.amazonaws.com/apache-maven-3.0.4-bin.tar.gz"
+            },
+            "packages": {
+              "yum": {
+                "git": [],
+                "java-1.8.0-openjdk*": []
+              }
+            },
+            "files": {
+              "/home/ec2-user/deployScripts": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "#!/bin/bash -xe\n",
+                      "date > /home/ec2-user/logfile \n",
+                      "git clone -b ",
+                      {
+                        "Ref": "BranchName"
+                      },
+                      " https://",
+                      {
+                        "Ref": "Username"
+                      },
+                      ":",
+                      {
+                        "Ref": "Password"
+                      },
+                      "@github.com/rgowerneni/DealMateLambda.git >> /home/ec2-user/logfile \n",
+                      "cd /home/ec2-user/DealMateLambda \n",
+                      "/usr/sbin/alternatives --set java /usr/lib/jvm/jre-1.8.0-openjdk.x86_64/bin/java >> /home/ec2-user/logfile \n",
+                      "/usr/local/apache-maven-3.0.4/bin/mvn clean install -DskipTests >> /home/ec2-user/logfile \n",
+                      "wget http://stedolan.github.io/jq/download/linux64/jq >> /home/ec2-user/logfile \n",
+					  "chmod +x ./jq >> /home/ec2-user/logfile \n",
+					  "sudo cp jq /usr/bin >> /home/ec2-user/logfile \n",					  
+						"awsregion=$( aws s3api get-bucket-location --bucket ",
+						{"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] },
+						" |  jq '.LocationConstraint') >> /home/ec2-user/logfile \n",
+					  "O1=$(expr length $(echo $awsregion)) >> /home/ec2-user/logfile \n",
+					  "O3=$(expr $O1 - 2) >> /home/ec2-user/logfile \n",
+					  "O2=$(expr substr $(echo $awsregion) 2 $(echo $O3)) >> /home/ec2-user/logfile \n",					  
+                      "aws s3 cp  /home/ec2-user/DealMateLambda/target/DealMateLambdaProject-*.jar ",
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "s3://",
+                            {"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] }
+                          ]
+                        ]
+                      },
+					  
+                      " --region $O2  >> /home/ec2-user/logfile \n",
+					  "sudo su - >> /home/ec2-user/logfile \n",
+                      "cd /home/ec2-user \n",
+                      "curl --silent --location https://rpm.nodesource.com/setup_7.x | bash - >> /home/ec2-user/logfile \n",                      
+                      "yum -y install nodejs >> /home/ec2-user/logfile \n",                      
+                      "git clone -b ",
+                      {
+                        "Ref": "BranchName"
+                      },
+                      " https://",
+                      {
+                        "Ref": "Username"
+                      },
+                      ":",
+                      {
+                        "Ref": "Password"
+                      },
+					   "@github.com/rgowerneni/DealMateLambdaNodeJs >> /home/ec2-user/logfile \n",
+					   "#git clone https://jvenkatanagaraju:venkat123@github.com/rgowerneni/DealMateLambdaNodeJs \n",
+                      "cd /home/ec2-user/DealMateLambdaNodeJs >> /home/ec2-user/logfile \n",
+					  "npm install >> /home/ec2-user/logfile  \n",
+					  "npm install amazon-cognito-identity-js-node >> /home/ec2-user/logfile  \n",
+                     "zip DealMateLambdaNodeJs.zip index.js LICENSE.txt NOTICE.txt package.json README.md sample >> /home/ec2-user/logfile \n",
+					  "zip -r DealMateLambdaNodeJs.zip bower_components  >> /home/ec2-user/logfile \n",	
+                       "zip -r DealMateLambdaNodeJs.zip node_modules  >> /home/ec2-user/logfile \n",
+						"cd /home/ec2-user/DealMateLambdaNodeJs >> /home/ec2-user/logfile \n",						
+						"sed -i 's/us-east-1_NXmCzBkVq/",{ "Fn::GetAtt" : [ "CognitoUserPool", "Id" ] },"/g' index.js >> /home/ec2-user/logfile \n",
+							"sed -i 's/us-east-1/",{ "Ref": "AWS::Region" },"/g' index.js >> /home/ec2-user/logfile \n",
+					"sed -i 's/1vkde054jd2so772uc8d9ktd7a/",{ "Fn::GetAtt" : [ "CognitoUserPoolClient", "ClientId" ] },"/g' index.js >> /home/ec2-user/logfile \n",					
+					   					  
+                      "aws s3 cp  /home/ec2-user/DealMateLambdaNodeJs/DealMateLambdaNodeJs.zip ",
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "s3://",
+                            {"Fn::If": ["BucketExistsTrue", {"Ref":"LambdaSourceBucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] }
+                          ]
+                        ]
+                      },					  
+                      " --region $O2  >> /home/ec2-user/logfile \n",
+					  "# Send signal to WaitHandle that the setup is completed\n",
+				"/opt/aws/bin/cfn-signal", " -e 0", " '", { "Ref" : "WaitHandle" }, "'","\n",
+                      "date >> /home/ec2-user/logfile \n"
+                    ]
+                  ]
+                },
+                "mode": "000777",
+                "owner": "root",
+                "group": "root"
+              }
+            }
+          }
+        }
+      }
+    },
+	"WaitHandle" : {
+  "Type" : "AWS::CloudFormation::WaitConditionHandle"
+},
+
+"WaitCondition" : {
+  "Type" : "AWS::CloudFormation::WaitCondition",
+  "DependsOn" : "AppServer",
+  "Properties" : {
+    "Handle" : { "Ref" : "WaitHandle" },
+    "Timeout" : "300"
+  }
+}
+  },
+  "Mappings": {
+    "AWSRegion2AMI": {
+      "us-east-1": {
+        "AMI": "ami-b73b63a0"
+      },
+      "us-east-2": {
+        "AMI": "ami-58277d3d"
+      },
+      "us-west-2": {
+        "AMI": "ami-5ec1673e"
+      },
+      "us-west-1": {
+        "AMI": "ami-23e8a343"
+      },
+      "eu-west-1": {
+        "AMI": "ami-9398d3e0"
+      },
+      "eu-central-1": {
+        "AMI": "ami-f9619996"
+      },
+      "ap-southeast-1": {
+        "AMI": "ami-b953f2da"
+      },
+      "ap-northeast-2": {
+        "AMI": "ami-983ce8f6"
+      },
+      "ap-northeast-1": {
+        "AMI": "ami-0c11b26d"
+      },
+      "ap-southeast-2": {
+        "AMI": "ami-db704cb8"
+      },
+      "ap-south-1": {
+        "AMI": "ami-34b4c05b"
+      },
+      "sa-east-1": {
+        "AMI": "ami-97831ffb"
+      },
+      "ca-central-1": {
+        "AMI": "ami-b48b39d0"
+      },
+      "eu-west-2": {
+        "AMI": "ami-d6cbc1b2"
+      }
+    }
+  }
+}

@@ -1,0 +1,497 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Template For ApplicationServer",
+  "Metadata": {
+    "AWS::CloudFormation::Interface": {
+      "ParameterGroups": [
+        {
+          "Label": {
+            "default": "Application Server Configuration "
+          },
+          "Parameters": [
+            "KeyName",
+            "InstanceType",
+            "VpcId",
+            "AvailabilityZones"
+          ]
+        },
+        {
+          "Label": {
+            "default": "Git Configuration"
+          },
+          "Parameters": [
+            "BranchName",
+            "Username",
+            "Password"
+          ]
+        },
+		{
+          "Label": {
+            "default": "nodejs Configuration"
+          },
+          "Parameters": [
+            "LambdaFileName",
+            "LambdaSourceBucket"
+            
+          ]
+        }
+      ],
+      "ParameterLabels": {
+        "BranchName": {
+          "default": "BranchName"
+        },
+        "Username": {
+          "default": "Username"
+        },
+        "Password": {
+          "default": "Password"
+        },
+        "Availabilityzones": {
+          "default": "Availabilityzones"
+        },
+        "InstanceType": {
+          "default": "InstanceType"
+        },
+        "KeyName": {
+          "default": "KeyName"
+        },
+        "VpcId": {
+          "default": "VpcId"
+        },
+		"LambdaFileName": {
+          "default": "LambdaFileName"
+        },
+        "LambdaSourceBucket": {
+          "default": "LambdaSourceBucket"
+        }
+      }
+    }
+  },
+  "Parameters": {
+  "LambdaFileName": {
+            "Description": "Name of the ZIP file with lambda function sources inside S3 bucket",
+            "Default": "DealMateLambdaNodeJs.zip",
+			"Type": "String"
+        },
+        "LambdaSourceBucket": {
+            "Description": "Name of the bucket where lambda function sources is stored",
+            "Default": "uybh565",
+			"Type": "String"
+        },
+    "AvailabilityZones": {
+      "Description": " Please select AvailabilityZone to create instance",
+      "Type": "List<AWS::EC2::AvailabilityZone::Name>"
+    },
+    "KeyName": {
+      "Description": "Please select the name of an existing EC2 KeyPair to enable SSH access to the instances",
+      "Type": "AWS::EC2::KeyPair::KeyName"
+    },
+    "InstanceType": {
+      "Description": "Please select the type of EC2 instance to launch",
+      "Type": "String",
+      "AllowedValues": [
+        "t2.nano",
+        "t2.micro",
+        "t2.small",
+        "t2.medium",
+        "t2.large",
+        "m3.medium",
+        "m3.large",
+        "m4.large"
+      ],
+      "Default": "t2.micro"
+    },
+    "VpcId": {
+      "Description": "Please select default VpcId to create instance",
+      "Type": "AWS::EC2::VPC::Id"
+    },
+    "S3BucketName": {
+      "Description": "Please enter the Unique Bucket name should be within 8 characters, Leave the bucket name empty to create bucket with default random name",
+      "Type": "String",
+      "AllowedPattern": "[a-z0-9]*"
+    },
+    "BranchName": {
+      "Description": "Please Enter the Branchname for GitHub",
+      "Type": "String"
+    },
+    "Username": {
+      "Description": "Please Enter the Username for GitHub",
+      "Type": "String",
+      "Default": "jvenkatanagaraju",
+      "NoEcho": "true"
+    },
+    "Password": {
+      "Description": "Please Enter the Password for GitHub, If your password contains @ please replace the value with %40 ",
+      "Type": "String",
+      "Default": "venkat123",
+      "NoEcho": "true"
+    }
+  },
+  "Resources": {
+  "LambaRole": {
+  "DependsOn": "AppServer",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ],
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "Policies": [
+                    {
+                        "PolicyDocument": {
+                            "Statement": [
+                                {
+                                    "Action": [
+                                        "logs:CreateLogGroup",
+                                        "logs:CreateLogStream",
+                                        "logs:PutLogEvents"
+                                    ],
+                                    "Effect": "Allow",                                    
+                                    "Resource": [
+                                        "arn:aws:logs:*:*:*"
+                                    ]
+                                }
+                            ]
+                        },
+                        "PolicyName": "LambdaPolicy"
+                    }
+                ]
+            },
+            "Type": "AWS::IAM::Role"
+        },
+        "Lambda": {
+		"DependsOn": "AppServer",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Ref": "LambdaSourceBucket"
+                    },
+                    "S3Key": {
+                        "Ref": "LambdaFileName"
+                    }
+                },
+                "Handler": "index.handler",
+                "MemorySize": 128,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambaRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "nodejs4.3",
+                "Timeout": 30
+            },
+            "Type": "AWS::Lambda::Function"
+        },    
+	    "RootRole": {
+         "Type": "AWS::IAM::Role",
+         "Properties": {
+            "AssumeRolePolicyDocument": {
+               "Version" : "2012-10-17",
+               "Statement": [ {
+                  "Effect": "Allow",
+                  "Principal": {
+                     "Service": [ "ec2.amazonaws.com" ]
+                  },
+                  "Action": [ "sts:AssumeRole" ]
+               } ]
+            },
+            "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "root",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "arn:aws:logs:*:*:*"
+                }
+                
+              ]
+            }
+          },
+          {
+            "PolicyName": "S3BucketPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": "arn:aws:s3:::*/*"
+                }
+              ]
+            }
+          },
+          {
+            "PolicyName": "adminaccess",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ]
+			}
+			},
+             
+      "RootInstanceProfile": {
+         "Type": "AWS::IAM::InstanceProfile",
+         "Properties": {
+            "Path": "/",
+            "Roles": [ {
+               "Ref": "RootRole"
+            } ]
+         }
+      },
+   
+    "BucketNames": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": {
+          "Ref": "S3BucketName"
+        }
+      }
+    },
+    
+    "SecurityGroups": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "GroupDescription": "Enable SMTP access from the Internet and SSH/HTTP access from maintenance CIDR.",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "80",
+            "ToPort": "80",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "22",
+            "ToPort": "22",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "8080",
+            "ToPort": "8080",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "AppServer": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "SecurityGroupIds": [
+          {
+            "Ref": "SecurityGroups"
+          }
+        ],
+        "IamInstanceProfile": {
+          "Ref": "RootInstanceProfile"
+        },
+        "AvailabilityZone": {
+          "Fn::Select": [
+            "0",
+            {
+              "Ref": "AvailabilityZones"
+            }
+          ]
+        },
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "ImageId": {
+          "Fn::FindInMap": [
+            "AWSRegion2AMI",
+            {
+              "Ref": "AWS::Region"
+            },
+            "AMI"
+          ]
+        },
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -xe\n",
+                "yum install -y aws-cfn-bootstrap\n",
+                "# Install the files and packages from the metadata\n",
+                "/opt/aws/bin/cfn-init -v ",
+                "         --stack ",
+                {
+                  "Ref": "AWS::StackName"
+                },
+                "         --resource AppServer ",
+                "         --configsets Install ",
+                "    --region ",
+                {
+                  "Ref": "AWS::Region"
+                },
+                " || error_exit 'Failed to run cfn-init'\n",
+                "sudo su - \n",
+                "cd /home/ec2-user \n",
+                "chmod 777 deployScripts\n",
+                "/home/ec2-user/deployScripts \n"
+              ]
+            ]
+          }
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "AppServer"
+          }
+        ]
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Init": {
+          "configSets": {
+            "Install": [
+              "Install"
+            ]
+          },
+          "Install": {
+            "sources": {
+              "/usr/local": "http://awsu-amm.s3.amazonaws.com/apache-maven-3.0.4-bin.tar.gz"
+            },
+            "packages": {
+              "yum": {
+                "git": []                
+              }
+            },
+            "files": {
+              "/home/ec2-user/deployScripts": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "#!/bin/bash -xe\n",
+                      "date > /home/ec2-user/logfile \n",
+					  "sudo su - >> /home/ec2-user/logfile \n",
+                      "cd /home/ec2-user \n",
+                      "curl --silent --location https://rpm.nodesource.com/setup_7.x | bash - >> /home/ec2-user/logfile \n",                      
+                      "yum -y install nodejs >> /home/ec2-user/logfile \n",                      
+                      "git clone -b ",
+                      {
+                        "Ref": "BranchName"
+                      },
+                      " https://",
+                      {
+                        "Ref": "Username"
+                      },
+                      ":",
+                      {
+                        "Ref": "Password"
+                      },
+					   "@github.com/rgowerneni/DealMateLambdaNodeJs >> /home/ec2-user/logfile \n",
+					   "#git clone https://jvenkatanagaraju:venkat123@github.com/rgowerneni/DealMateLambdaNodeJs \n",
+                      "cd /home/ec2-user/DealMateLambdaNodeJs >> /home/ec2-user/logfile \n",
+					  "npm install >> /home/ec2-user/logfile  \n",
+					  "npm install amazon-cognito-identity-js-node >> /home/ec2-user/logfile  \n",
+                     "zip DealMateLambdaNodeJs.zip index.js LICENSE.txt NOTICE.txt package.json README.md sample >> /home/ec2-user/logfile \n",
+					  "zip -r DealMateLambdaNodeJs.zip bower_components  >> /home/ec2-user/logfile \n",	
+                       "zip -r DealMateLambdaNodeJs.zip node_modules  >> /home/ec2-user/logfile \n",	 
+					   "aws s3 cp  /home/ec2-user/DealMateLambdaNodeJs/DealMateLambdaNodeJs.zip ",
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "s3://",   
+							{
+                              "Ref": "S3BucketName"
+                            }
+                          ]
+                        ]
+                      },
+                      "   >> /home/ec2-user/logfile \n",
+                      "date >> /home/ec2-user/logfile \n"
+                    ]
+                  ]
+                },
+                "mode": "000777",
+                "owner": "root",
+                "group": "root"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "Mappings": {
+    "AWSRegion2AMI": {
+      "us-east-1": {
+        "AMI": "ami-b73b63a0"
+      },
+      "us-east-2": {
+        "AMI": "ami-58277d3d"
+      },
+      "us-west-2": {
+        "AMI": "ami-5ec1673e"
+      },
+      "us-west-1": {
+        "AMI": "ami-23e8a343"
+      },
+      "eu-west-1": {
+        "AMI": "ami-9398d3e0"
+      },
+      "eu-central-1": {
+        "AMI": "ami-f9619996"
+      },
+      "ap-southeast-1": {
+        "AMI": "ami-b953f2da"
+      },
+      "ap-northeast-2": {
+        "AMI": "ami-983ce8f6"
+      },
+      "ap-northeast-1": {
+        "AMI": "ami-0c11b26d"
+      },
+      "ap-southeast-2": {
+        "AMI": "ami-db704cb8"
+      },
+      "ap-south-1": {
+        "AMI": "ami-34b4c05b"
+      },
+      "sa-east-1": {
+        "AMI": "ami-97831ffb"
+      },
+      "ca-central-1": {
+        "AMI": "ami-b48b39d0"
+      },
+      "eu-west-2": {
+        "AMI": "ami-d6cbc1b2"
+      }
+    }
+  }
+}

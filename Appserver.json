@@ -1,0 +1,531 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Template For ApplicationServer",
+  "Metadata": {
+    "AWS::CloudFormation::Interface": {
+      "ParameterGroups": [
+        {
+          "Label": {
+            "default": "Application Server Configuration "
+          },
+          "Parameters": [
+            "KeyName",
+            "InstanceType",
+            "VpcId",
+            "AvailabilityZones"
+          ]
+        },
+        {
+          "Label": {
+            "default": "Git Configuration"
+          },
+          "Parameters": [
+            "BranchName",
+            "Username",
+            "Password"
+          ]
+        }
+      ],
+      "ParameterLabels": {
+        "BranchName": {
+          "default": "BranchName"
+        },
+        "Username": {
+          "default": "Username"
+        },
+        "Password": {
+          "default": "Password"
+        },
+        "Availabilityzones": {
+          "default": "Availabilityzones"
+        },
+        "InstanceType": {
+          "default": "InstanceType"
+        },
+        "KeyName": {
+          "default": "KeyName"
+        },
+        "VpcId": {
+          "default": "VpcId"
+        }
+      }
+    }
+  },
+  "Parameters": {
+    "AvailabilityZones": {
+      "Description": " Please select AvailabilityZone to create instance",
+      "Type": "List<AWS::EC2::AvailabilityZone::Name>"
+    },
+    "KeyName": {
+      "Description": "Please select the name of an existing EC2 KeyPair to enable SSH access to the instances",
+      "Type": "AWS::EC2::KeyPair::KeyName"
+    },
+    "InstanceType": {
+      "Description": "Please select the type of EC2 instance to launch",
+      "Type": "String",
+      "AllowedValues": [
+        "t2.nano",
+        "t2.micro",
+        "t2.small",
+        "t2.medium",
+        "t2.large",
+        "m3.medium",
+        "m3.large",
+        "m4.large"
+      ],
+      "Default": "t2.micro"
+    },
+    "VpcId": {
+      "Description": "Please select default VpcId to create instance",
+      "Type": "AWS::EC2::VPC::Id"
+    },
+    "BranchName": {
+      "Description": "Please Enter the Branchname for GitHub",
+      "Type": "String"
+    },
+    "Username": {
+      "Description": "Please Enter the Username for GitHub",
+      "Type": "String"
+    },
+    "Password": {
+      "Description": "Please Enter the Password for GitHub, If your password contains @ please replace the value with %40 ",
+      "Type": "String",
+      "NoEcho": "true"
+    }
+  },
+  "Resources": {
+    "SecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "GroupDescription": "Enable SMTP access from the Internet and SSH/HTTP access from maintenance CIDR.",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "25",
+            "ToPort": "25",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "22",
+            "ToPort": "22",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "8080",
+            "ToPort": "8080",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "AppServer": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "SecurityGroupIds": [
+          {
+            "Ref": "SecurityGroup"
+          }
+        ],
+        "AvailabilityZone": {
+          "Fn::Select": [
+            "0",
+            {
+              "Ref": "AvailabilityZones"
+            }
+          ]
+        },
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "ImageId": {
+          "Fn::FindInMap": [
+            "AWSRegion2AMI",
+            {
+              "Ref": "AWS::Region"
+            },
+            "AMI"
+          ]
+        },
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -xe\n",
+                "yum install -y aws-cfn-bootstrap\n",
+                "# Install the files and packages from the metadata\n",
+                "/opt/aws/bin/cfn-init -v ",
+                "         --stack ",
+                {
+                  "Ref": "AWS::StackName"
+                },
+                "         --resource AppServer ",
+                "         --configsets Install ",
+                "    --region ",
+                {
+                  "Ref": "AWS::Region"
+                },
+                " || error_exit 'Failed to run cfn-init'\n",
+                "sudo su - \n",
+                "cd /home/ec2-user \n",
+                "chmod 777 deployScripts\n",
+                "/home/ec2-user/deployScripts \n"
+              ]
+            ]
+          }
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "AppServer"
+          }
+        ]
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Init": {
+          "configSets": {
+            "Install": [
+              "Install"
+            ]
+          },
+          "Install": {
+            "sources": {
+              "/usr/local": "http://awsu-amm.s3.amazonaws.com/apache-maven-3.0.4-bin.tar.gz"
+            },
+            "packages": {
+              "yum": {
+                "git": [],
+                "java-1.8.0-openjdk*": [],
+                "tomcat8": []
+              }
+            },
+            "files": {
+              "/home/ec2-user/deployScripts": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "#!/bin/bash -xe\n",
+                      "date > /home/ec2-user/logfile \n",
+                      "# Add Tomcat user to sudoers and disable tty \n",
+                      "echo \"tomcat ALL=(ALL) NOPASSWD:ALL\" >> /etc/sudoers\n",
+                      "echo \"Defaults:%tomcat !requiretty\" >> /etc/sudoers\n",
+                      "echo \"Defaults:tomcat !requiretty\" >> /etc/sudoers\n",
+                      "MemInfo=",
+                      "$(cat /proc/meminfo | grep 'MemTotal:')",
+                      "\n",
+                      "O1=",
+                      "$(expr length ",
+                      "\"$(echo $MemInfo)\")",
+                      "\n",
+                      "O2=",
+                      "$(expr $O1 - 13)",
+                      "\n",
+                      "O3=",
+                      "$(expr substr ",
+                      "\"$(echo $MemInfo)\" 11 \"$(echo $O2)\")",
+                      "\n",
+                      "O4=",
+                      "$(expr $O3 / 2)",
+                      "\n",
+                      "O5=",
+                      "$(expr $O3 / 4)",
+                      "\n",
+                      "O6=",
+                      "$(expr $O4 / 1000)",
+                      "\n",
+                      "O7=",
+                      "$(expr $O5 / 1000)",
+                      "\n",
+                      "O6+=m\n",
+                      "O7+=m\n",
+                      "# Set JVM settings\n",
+                      "echo \"JAVA_OPTS='${JAVA_OPTS} -Xms$O6 -Xmx$O6 -XX:PermSize=$O7 -XX:MaxPermSize=$O6'\" >> /etc/tomcat8/tomcat8.conf\n",
+                      "# Tomcat Setup\n",
+                      "chown -R tomcat:tomcat /usr/share/tomcat8/ \n",
+                      "chkconfig tomcat8 on\n",
+                      "chkconfig --level 345 tomcat8 on\n",
+                      "git clone -b ",
+                      {
+                        "Ref": "BranchName"
+                      },
+                      " https://",
+                      {
+                        "Ref": "Username"
+                      },
+                      ":",
+                      {
+                        "Ref": "Password"
+                      },
+                      "@github.com/rgowerneni/email-service >> /home/ec2-user/logfile \n",
+                      "cd /home/ec2-user/email-service \n",
+                      "/usr/sbin/alternatives --set java /usr/lib/jvm/jre-1.8.0-openjdk.x86_64/bin/java \n",
+                      "/usr/local/apache-maven-3.0.4/bin/mvn clean install -DskipTests >> /home/ec2-user/logfile \n",
+                      "cp  /home/ec2-user/email-service/moxiecampaigner-web/target/*.war  /usr/share/tomcat8/webapps \n",
+                      "# Start servers\n",
+                      "service tomcat8 start >> /home/ec2-user/logfile \n",
+                      "rm -rf /home/ec2-user/email-service\n",
+                      "date >> /home/ec2-user/logfile \n"
+                    ]
+                  ]
+                },
+                "mode": "000777",
+                "owner": "root",
+                "group": "root"
+              },
+              "/usr/share/tomcat8/lib/aws.properties": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "aws.s3.bucket.endpoint=s3-external-1.amazonaws.com \n",
+                      "mail=moxieitemail \n",
+                      "email.master.queue=Moxieit-email-master-queue1 \n",
+                      "mail.id=moxieitdeveloper8@gmail.com \n",
+                      "mail.password=moxieit123 \n",
+                      "host.name=52.91.188.218 \n",
+                      "mail.smtp.port=25 \n",
+                      "SECRET_KEY=MoxieitIncCampaignerApplication \n"
+                    ]
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "Mappings": {
+    "AWSRegion2AMI": {
+      "us-east-1": {
+        "AMI": "ami-b73b63a0"
+      },
+      "us-east-2": {
+        "AMI": "ami-58277d3d"
+      },
+      "us-west-2": {
+        "AMI": "ami-5ec1673e"
+      },
+      "us-west-1": {
+        "AMI": "ami-23e8a343"
+      },
+      "eu-west-1": {
+        "AMI": "ami-9398d3e0"
+      },
+      "eu-central-1": {
+        "AMI": "ami-f9619996"
+      },
+      "ap-southeast-1": {
+        "AMI": "ami-b953f2da"
+      },
+      "ap-northeast-2": {
+        "AMI": "ami-983ce8f6"
+      },
+      "ap-northeast-1": {
+        "AMI": "ami-0c11b26d"
+      },
+      "ap-southeast-2": {
+        "AMI": "ami-db704cb8"
+      },
+      "ap-south-1": {
+        "AMI": "ami-34b4c05b"
+      },
+      "sa-east-1": {
+        "AMI": "ami-97831ffb"
+      },
+      "ca-central-1": {
+        "AMI": "ami-b48b39d0"
+      },
+      "eu-west-2": {
+        "AMI": "ami-d6cbc1b2"
+      }
+    }
+  },
+  "Outputs": {
+    "AppServerInstanceDnsName": {
+      "Value": {
+        "Fn::GetAtt": [
+          "AppServer",
+          "PublicDnsName"
+        ]
+      },
+      "Description": "public DNS name of the new AppServer"
+    },
+    "WebsiteURL": {
+      "Description": "URL for newly created Instance",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "http://",
+            {
+              "Fn::GetAtt": [
+                "AppServer",
+                "PublicDnsName"
+              ]
+            },
+            ":8080/emailservice-1.0/rest/testUrl"
+          ]
+        ]
+      }
+    }
+  }
+}
+
+
+
+
+
+{
+ "AWSTemplateFormatVersion": "2010-09-09",
+ "Description": "Template For iam role", 
+  "Parameters": {
+  "AvailabilityZones": {
+      "Description": " Please select AvailabilityZone to create instance",
+      "Type": "List<AWS::EC2::AvailabilityZone::Name>"
+    },
+ "KeyName": {
+      "Description": "Please select the name of an existing EC2 KeyPair to enable SSH access to the instances",
+      "Type": "AWS::EC2::KeyPair::KeyName"
+    },
+	 "VpcId": {
+      "Description": "Please select default VpcId to create instance",
+      "Type": "AWS::EC2::VPC::Id"
+    },
+    "InstanceType": {
+      "Description": "Please select the type of EC2 instance to launch",
+      "Type": "String",
+      "AllowedValues": [
+        "t2.nano",
+        "t2.micro",
+        "t2.small",
+        "t2.medium",
+        "t2.large",
+        "m3.medium",
+        "m3.large",
+        "m4.large"
+      ],
+      "Default": "t2.micro"
+    }
+	},
+  
+	 "Resources": {
+	"SecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "GroupDescription": "Enable SMTP access from the Internet and SSH/HTTP access from maintenance CIDR.",
+        "SecurityGroupIngress": [
+          
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "22",
+            "ToPort": "22",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "8080",
+            "ToPort": "8080",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+  "Ec2Instance" : {
+  "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "SecurityGroupIds": [
+          {
+            "Ref": "SecurityGroup"
+          }
+        ],
+        "AvailabilityZone": {
+          "Fn::Select": [
+            "0",
+            {
+              "Ref": "AvailabilityZones"
+            }
+          ]
+        },
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "ImageId": {
+          "Fn::FindInMap": [
+            "AWSRegion2AMI",
+            {
+              "Ref": "AWS::Region"
+            },
+            "AMI"
+          ]
+        }
+		}
+		}
+		},
+		 "Mappings": {
+    "AWSRegion2AMI": {
+      "us-east-1": {
+        "AMI": "ami-b73b63a0"
+      },
+      "us-east-2": {
+        "AMI": "ami-58277d3d"
+      },
+      "us-west-2": {
+        "AMI": "ami-5ec1673e"
+      },
+      "us-west-1": {
+        "AMI": "ami-23e8a343"
+      },
+      "eu-west-1": {
+        "AMI": "ami-9398d3e0"
+      },
+      "eu-central-1": {
+        "AMI": "ami-f9619996"
+      },
+      "ap-southeast-1": {
+        "AMI": "ami-b953f2da"
+      },
+      "ap-northeast-2": {
+        "AMI": "ami-983ce8f6"
+      },
+      "ap-northeast-1": {
+        "AMI": "ami-0c11b26d"
+      },
+      "ap-southeast-2": {
+        "AMI": "ami-db704cb8"
+      },
+      "ap-south-1": {
+        "AMI": "ami-34b4c05b"
+      },
+      "sa-east-1": {
+        "AMI": "ami-97831ffb"
+      },
+      "ca-central-1": {
+        "AMI": "ami-b48b39d0"
+      },
+      "eu-west-2": {
+        "AMI": "ami-d6cbc1b2"
+      }
+    },
+    "StackConfig": {
+      "Postfix": {
+        "Version": "2.6.6"
+      }
+    }
+  }
+  }

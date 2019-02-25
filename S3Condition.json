@@ -1,0 +1,154 @@
+ {
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Parameters": {
+  "UseExistingBucket": {
+	"Description":"Please select any one,(True/False),If you want to create new bucket choose FALSE",
+      "Type": "String",
+      "Default": "false",
+      "AllowedValues": [
+        "true",
+        "false"
+      ]
+    },
+    "S3BucketName": {
+	"Description":"Please enter the Unique Bucket name should be within 8 characters, Leave the bucket name empty to create bucket with default random name",
+      "Type": "String",
+	  "AllowedPattern" : "[a-z0-9]*"
+    }},
+	"Conditions": {
+  "BucketExists": {
+      "Fn::Equals": [
+        {
+          "Ref": "UseExistingBucket"
+        },
+        "false"
+      ]
+    },
+	"BucketExistsTrue": {
+      "Fn::Equals": [
+        {
+          "Ref": "UseExistingBucket"
+        },
+        "true"
+      ]
+    },
+    "BucketNameEmpty": {
+      "Fn::Equals": [
+        {
+          "Ref": "S3BucketName"
+        },
+        ""
+      ]
+    },
+    "BucketExistsAndBucketNameEmpty": {
+      "Fn::And": [
+        {
+          "Condition": "BucketExists"
+        },
+        {
+          "Condition": "BucketNameEmpty"
+        }
+      ]
+    },
+    "BucketExistsAndBucketNameNotEmpty": {
+      "Fn::And": [
+        {
+          "Condition": "BucketExists"
+        },
+        {
+          "Fn::Not": [
+            {
+              "Condition": "BucketNameEmpty"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Resources": { 
+  "MoxieitFolderWithUserBucketName": {
+      "Type": "AWS::S3::Bucket",
+      "Condition": "BucketExistsAndBucketNameNotEmpty",
+      "Properties": {
+        "BucketName": {
+          "Ref": "S3BucketName"
+        }
+      }
+    },
+    "MoxieitFolderWithOutUserBucketName": {
+      "Type": "AWS::S3::Bucket",
+      "Condition": "BucketExistsAndBucketNameEmpty"
+    },
+	"RootRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                        "Service": [ "lambda.amazonaws.com" ,
+                  "ec2.amazonaws.com"  ]
+                     },
+                     "Action": [ "sts:AssumeRole" ]
+                   }
+               ]
+             },
+              "Path": "/",
+        "Policies": [
+		{
+            "PolicyName": "S3BucketPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+      "Effect": "Allow",
+      "Action": "s3:ListAllMyBuckets",
+      "Resource": "arn:aws:s3:::*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetBucketLocation"
+      ],
+      "Resource": {
+        "Fn::Join": [
+                                  "",
+                                  [
+                                     "arn:aws:s3:::",
+								   {"Fn::If": ["BucketExistsTrue", {"Ref":"S3BucketName"},{"Fn::If" :["BucketNameEmpty",{"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] }
+									]]
+    }},
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": { "Fn::Join": [
+                                  "",
+                                  [
+                                     "arn:aws:s3:::",
+								    {"Fn::If": ["BucketExistsTrue", {"Ref":"S3BucketName"},{ "Fn::If" :["BucketNameEmpty" , {"Ref":"MoxieitFolderWithOutUserBucketName"},{"Ref":"MoxieitFolderWithUserBucketName"}] }] },
+									"/","*" ]]
+
+    }}]}}
+                      ]
+                   }
+                },
+ "RootInstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          {
+            "Ref": "RootRole"
+          }
+        ]
+      }
+    }
+	}}
+  

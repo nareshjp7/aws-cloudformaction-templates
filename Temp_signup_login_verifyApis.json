@@ -1,0 +1,390 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+	"Description": "Image gateway",
+    "Parameters": {
+        "LambdaFileName": {
+            "Description": "Name of the ZIP file with lambda function sources inside S3 bucket",
+            "Default": "dealmate.zip",
+			"Type": "String"
+        },
+        "LambdaSourceBucket": {
+            "Description": "Name of the bucket where lambda function sources is stored",
+            "Default": "apiforsignup",
+			"Type": "String"
+        }
+    },
+    "Resources": {
+        "API": {
+            "Properties": {
+                "Description": "My API",
+                "Name": "nodejsapis"
+            },
+            "Type": "AWS::ApiGateway::RestApi"
+        },
+        "APIDeployment": {
+		"DependsOn": [ "APIsignupResourceMethodpost", "loginResourceMethodPost", "verifyResourceMethodPost" ],
+            "Properties": {
+                "RestApiId": {
+                    "Ref": "API"
+                }
+            },
+            "Type": "AWS::ApiGateway::Deployment"
+        },
+        "APIsignupResource": {
+            "Properties": {
+                "ParentId": {
+                    "Fn::GetAtt": [
+                        "API",
+                        "RootResourceId"
+                    ]
+                },
+                "PathPart": "signup",
+                "RestApiId": {
+                    "Ref": "API"
+                }
+            },
+            "Type": "AWS::ApiGateway::Resource"
+        },
+		 "loginResource": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "API"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "API",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "login"
+      }
+    },
+	"verifyResource": {
+            "Properties": {
+                "ParentId": {
+                    "Fn::GetAtt": [
+                        "API",
+                        "RootResourceId"
+                    ]
+                },
+                "PathPart": "verify",
+                "RestApiId": {
+                    "Ref": "API"
+                }
+            },
+            "Type": "AWS::ApiGateway::Resource"
+        },
+		"Authorizer": {
+      "Type": "AWS::ApiGateway::Authorizer",
+      "Properties": {
+        "ProviderARNs" : [  "arn:aws:cognito-idp:us-east-1:631580520244:userpool/us-east-1_TdSvAS5lz" ],
+        "Type": "COGNITO_USER_POOLS",
+        "IdentitySource": "method.request.header.Authorization",
+        "Name": "development",
+        "RestApiId": {
+          "Ref": "API"
+        }
+      }
+    },
+        "APIsignupResourceMethodpost": {
+            "Properties": {
+                "ApiKeyRequired": false,
+                "AuthorizationType": "NONE",
+                "HttpMethod": "POST",
+                "Integration": {
+                    "IntegrationHttpMethod": "POST",
+					"PassthroughBehavior" : "WHEN_NO_MATCH",
+                    "IntegrationResponses": [	
+                        {
+                            
+                            "StatusCode": "200"
+                        }
+                        
+                    ],
+                    
+                    "Type": "AWS",
+                    "Uri": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "arn:aws:apigateway:",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                ":lambda:path/2015-03-31/functions/",
+                                {
+                                    "Fn::GetAtt": [
+                                        "Lambda",
+                                        "Arn"
+                                    ]
+                                },
+                                "/invocations"
+                            ]
+                        ]
+                    }
+                },
+                "MethodResponses": [{
+      "ResponseModels": {
+        "application/json": "Empty"
+      },
+      "ResponseParameters": {
+        "method.response.header.Authorization": true
+      },
+      "StatusCode": 200
+    }],
+                "RequestParameters": {
+                    "method.request.path.param1": true
+                    
+                },
+                "ResourceId": {
+                    "Ref": "APIsignupResource"
+                },
+                "RestApiId": {
+                    "Ref": "API"
+                }
+            },
+            "Type": "AWS::ApiGateway::Method"
+        },
+"loginResource": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "API"
+        },
+        "ParentId": {
+          "Fn::GetAtt": [
+            "API",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "login"
+      }
+    },
+         "loginResourceMethodPost": {
+            "Properties": {
+                "ApiKeyRequired": false,
+                "AuthorizationType": "NONE",
+                "HttpMethod": "POST",
+                "Integration": {
+                    "IntegrationHttpMethod": "POST",
+					"PassthroughBehavior" : "WHEN_NO_MATCH",
+                    "IntegrationResponses": [	
+                        {
+                            
+                            "StatusCode": "200"
+                        }
+                        
+                    ],
+                    
+                    "Type": "AWS",
+                    "Uri": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "arn:aws:apigateway:",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                ":lambda:path/2015-03-31/functions/",
+                                {
+                                    "Fn::GetAtt": [
+                                        "Lambda",
+                                        "Arn"
+                                    ]
+                                },
+                                "/invocations"
+                            ]
+                        ]
+                    }
+                },
+                "MethodResponses": [{
+      "ResponseModels": {
+        "application/json": "Empty"
+      },
+      "ResponseParameters": {
+        "method.response.header.Authorization": true
+      },
+      "StatusCode": 200
+    }],
+                "RequestParameters": {
+                    "method.request.path.param1": true
+                    
+                },
+                "ResourceId": {
+                    "Ref": "loginResource"
+                },
+                "RestApiId": {
+                    "Ref": "API"
+                }
+            },
+            "Type": "AWS::ApiGateway::Method"
+        },
+        "APILambdaPermission": {
+            "Properties": {
+                "Action": "lambda:InvokeFunction",
+                "FunctionName": {
+                    "Ref": "Lambda"
+                },
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "arn:aws:execute-api:",
+                            {
+                                "Ref": "AWS::Region"
+                            },
+                            ":",
+                            {
+                                "Ref": "AWS::AccountId"
+                            },
+                            ":",	
+                            {
+                                "Ref": "API"
+                            },
+                            "/*/POST/*"
+                        ]
+                    ]
+                }
+            },
+            "Type": "AWS::Lambda::Permission"
+        },
+		         "verifyResourceMethodPost": {
+            "Properties": {
+                "ApiKeyRequired": false,
+                "AuthorizationType": "NONE",
+                "HttpMethod": "POST",
+                "Integration": {
+                    "IntegrationHttpMethod": "POST",
+					"PassthroughBehavior" : "WHEN_NO_MATCH",
+                    "IntegrationResponses": [	
+                        {
+                            
+                            "StatusCode": "200"
+                        }
+                        
+                    ],
+                    
+                    "Type": "AWS",
+                    "Uri": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "arn:aws:apigateway:",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                ":lambda:path/2015-03-31/functions/",
+                                {
+                                    "Fn::GetAtt": [
+                                        "Lambda",
+                                        "Arn"
+                                    ]
+                                },
+                                "/invocations"
+                            ]
+                        ]
+                    }
+                },
+                "MethodResponses": [{
+      "ResponseModels": {
+        "application/json": "Empty"
+      },
+      "ResponseParameters": {
+        "method.response.header.Authorization": true
+      },
+      "StatusCode": 200
+    }],
+                "RequestParameters": {
+                    "method.request.path.param1": true
+                    
+                },
+                "ResourceId": {
+                    "Ref": "verifyResource"
+                },
+                "RestApiId": {
+                    "Ref": "API"
+                }
+            },
+            "Type": "AWS::ApiGateway::Method"
+        },
+        "APIStage": {
+            "Properties": {
+                "CacheClusterEnabled": false,
+                "DeploymentId": {
+                    "Ref": "APIDeployment"
+                },
+                "RestApiId": {
+                    "Ref": "API"
+                },
+                "StageName": "dev"
+            },
+            "Type": "AWS::ApiGateway::Stage"
+        },
+        "LambaRole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ],
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "Policies": [
+                    {
+                        "PolicyDocument": {
+                            "Statement": [
+                                {
+                                    "Action": [
+                                        "logs:CreateLogGroup",
+                                        "logs:CreateLogStream",
+                                        "logs:PutLogEvents"
+                                    ],
+                                    "Effect": "Allow",                                    
+                                    "Resource": [
+                                        "arn:aws:logs:*:*:*"
+                                    ]
+                                }
+                            ]
+                        },
+                        "PolicyName": "LambdaPolicy"
+                    }
+                ]
+            },
+            "Type": "AWS::IAM::Role"
+        },
+        "Lambda": {
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Ref": "LambdaSourceBucket"
+                    },
+                    "S3Key": {
+                        "Ref": "LambdaFileName"
+                    }
+                },
+                "Handler": "index.handler",
+                "MemorySize": 128,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambaRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "nodejs4.3",
+                "Timeout": 30
+            },
+            "Type": "AWS::Lambda::Function"
+        }
+
+    }
+}
